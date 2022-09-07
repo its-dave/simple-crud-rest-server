@@ -18,6 +18,15 @@ func TestMain(t *testing.T) {
 			"event":"create",
 			"value":"value1"
 		}
+	],
+	"key2":[
+		{
+			"event":"create",
+			"value":"value1"
+		},
+		{
+			"event":"delete"
+		}
 	]
 }
 `
@@ -30,14 +39,26 @@ func TestMain(t *testing.T) {
 		expResponseCode int
 	}{
 		{
-			name:            "get",
+			name:            "get key which exists",
 			url:             "/api/key1",
 			method:          http.MethodGet,
 			expResponseBody: "value1",
 			expResponseCode: http.StatusOK,
 		},
 		{
-			name:   "get history",
+			name:            "get key which has been deleted",
+			url:             "/api/key2",
+			method:          http.MethodGet,
+			expResponseCode: http.StatusNoContent,
+		},
+		{
+			name:            "get key which has never existed",
+			url:             "/api/key3",
+			method:          http.MethodGet,
+			expResponseCode: http.StatusNotFound,
+		},
+		{
+			name:   "get history for key which exists",
 			url:    "/api/key1/history",
 			method: http.MethodGet,
 			expResponseBody: `[
@@ -50,24 +71,70 @@ func TestMain(t *testing.T) {
 			expResponseCode: http.StatusOK,
 		},
 		{
-			name:            "post",
+			name:            "get history for key which has never existed",
+			url:             "/api/key1/history",
+			method:          http.MethodGet,
+			expResponseCode: http.StatusNotFound,
+		},
+		{
+			name:            "post key which has never existed",
+			url:             "/api",
+			method:          http.MethodPost,
+			reqBody:         `{"key3":"value3"}`,
+			expResponseCode: http.StatusCreated,
+		},
+		{
+			name:            "post key which already exists",
+			url:             "/api",
+			method:          http.MethodPost,
+			reqBody:         `{"key1":"value1"}`,
+			expResponseCode: http.StatusBadRequest,
+		},
+		{
+			name:            "post key which has been deleted",
 			url:             "/api",
 			method:          http.MethodPost,
 			reqBody:         `{"key2":"value2"}`,
-			expResponseCode: http.StatusOK,
+			expResponseCode: http.StatusCreated,
 		},
 		{
-			name:            "put",
+			name:            "put update to key which exists",
 			url:             "/api/key1",
 			method:          http.MethodPut,
-			reqBody:         "value2",
-			expResponseCode: http.StatusOK,
+			reqBody:         "value4",
+			expResponseCode: http.StatusNoContent,
 		},
 		{
-			name:            "delete",
+			name:            "put update to key which has been deleted",
+			url:             "/api/key2",
+			method:          http.MethodPut,
+			reqBody:         "value4",
+			expResponseCode: http.StatusBadRequest,
+		},
+		{
+			name:            "put update to key which has never existed",
+			url:             "/api/key3",
+			method:          http.MethodPut,
+			reqBody:         "value4",
+			expResponseCode: http.StatusNotFound,
+		},
+		{
+			name:            "delete key which exists",
 			url:             "/api/key1",
 			method:          http.MethodDelete,
-			expResponseCode: http.StatusOK,
+			expResponseCode: http.StatusNoContent,
+		},
+		{
+			name:            "delete key which has already been deleted",
+			url:             "/api/key2",
+			method:          http.MethodDelete,
+			expResponseCode: http.StatusBadRequest,
+		},
+		{
+			name:            "delete key which has never existed",
+			url:             "/api/key1",
+			method:          http.MethodDelete,
+			expResponseCode: http.StatusNotFound,
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
