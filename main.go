@@ -40,46 +40,34 @@ func Mux() *http.ServeMux {
 
 			// Parse request body
 			body := body(r)
-			var jsonBody interface{}
-			err = json.Unmarshal(body, &jsonBody)
+			var bodyJson interface{}
+			err = json.Unmarshal(body, &bodyJson)
 			if err != nil {
 				// TODO: 400
 				return
 			}
-			mapBody := jsonBody.(map[string]interface{})
-			if len(mapBody) != 1 {
+			bodyMap := bodyJson.(map[string]interface{})
+			if len(bodyMap) != 1 {
 				// TODO: 400
 				return
 			}
 
-			// Parse stored data
-			data, err := os.ReadFile(dataFilePath)
-			if err != nil {
-				// TODO: 500
-				return
-			}
-			var jsonData interface{}
-			err = json.Unmarshal(data, &jsonData)
-			if err != nil {
-				// TODO: 500
-				return
-			}
-			mapData := jsonData.(map[string]interface{})
+			dataMap := storedData()
 
 			// Set new key:value
-			for key, valueInterface := range mapBody {
+			for key, valueInterface := range bodyMap {
 				value, ok := valueInterface.(string)
 				if !ok {
 					// TODO: 400
 					return
 				}
 
-				if _, exists := mapData[key]; exists {
+				if _, exists := dataMap[key]; exists {
 					// TODO: if key exists but has no value then append to array
 					// TODO: 400
 					return
 				}
-				mapData[key] = []struct {
+				dataMap[key] = []struct {
 					Event string `json:"event"`
 					Value string `json:"value"`
 				}{
@@ -91,7 +79,7 @@ func Mux() *http.ServeMux {
 			}
 
 			// Write data
-			dataToWrite, err := json.Marshal(mapData)
+			dataToWrite, err := json.Marshal(dataMap)
 			if err != nil {
 				// TODO: 500
 				return
@@ -132,6 +120,23 @@ func Mux() *http.ServeMux {
 		}
 	})
 	return mux
+}
+
+// storedData parses the stored JSON data and returns it as a map
+func storedData() map[string]interface{} {
+	// Parse stored data
+	data, err := os.ReadFile(dataFilePath)
+	if err != nil {
+		// TODO: 500
+		return nil
+	}
+	var jsonData interface{}
+	err = json.Unmarshal(data, &jsonData)
+	if err != nil {
+		// TODO: 500
+		return nil
+	}
+	return jsonData.(map[string]interface{})
 }
 
 func body(r *http.Request) []byte {
