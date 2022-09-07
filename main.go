@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -12,6 +13,11 @@ import (
 const (
 	dataFilePath = "data.json"
 )
+
+type eventObj struct {
+	Event string `json:"event"`
+	Value string `json:"value"`
+}
 
 func Mux() *http.ServeMux {
 	// Ensure data file exists
@@ -67,10 +73,7 @@ func Mux() *http.ServeMux {
 					// TODO: 400
 					return
 				}
-				dataMap[key] = []struct {
-					Event string `json:"event"`
-					Value string `json:"value"`
-				}{
+				dataMap[key] = []eventObj{
 					{
 						Event: "create",
 						Value: value,
@@ -95,9 +98,41 @@ func Mux() *http.ServeMux {
 			// TODO: /api/key is called, must not be POST
 			switch r.Method {
 			case http.MethodGet:
-				// TODO: if key doesn't exist: 404
-				// TODO: if key has no value in final array entry: 204
-				// TODO: print value in final array entry to w
+				// Get value for key
+
+				key := urlParts[1]
+				dataMap := storedData()
+				keyArray, exists := dataMap[key]
+
+				// Key does not exist
+				if !exists {
+					// TODO: 404
+					return
+				}
+
+				// Get value into a usable form
+				array, ok := keyArray.([]interface{})
+				if !ok {
+					// TODO: 500
+					return
+				}
+				latest := array[len(array)-1]
+				latestJson, _ := json.Marshal(latest)
+				var latestEventObj eventObj
+				err = json.Unmarshal(latestJson, &latestEventObj)
+				if err != nil {
+					// TODO: 500
+					return
+				}
+
+				// Key has been deleted
+				if latestEventObj.Value == "" {
+					// TODO: 204
+					return
+				}
+				fmt.Fprint(w, latestEventObj.Value)
+				// TODO: 200
+				return
 			case http.MethodPatch, http.MethodPut:
 				// TODO: if key doesn't exist: 404
 				// TODO: if key has no value in final array entry: 400
