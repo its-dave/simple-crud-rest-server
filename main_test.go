@@ -5,58 +5,81 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestMain(t *testing.T) {
+	initialState := `{
+	"key1":[
+		{
+			"event":"create",
+			"value":"value1"
+		}
+	]
+}
+`
 	for _, tc := range []struct {
 		name            string
 		url             string
 		method          string
+		reqBody         string
+		expResponseBody string
 		expResponseCode int
-		jsonBody        string
 	}{
 		{
 			name:            "get",
-			url:             "/api/asdf",
+			url:             "/api/key1",
 			method:          http.MethodGet,
+			expResponseBody: "value1",
 			expResponseCode: http.StatusOK,
 		},
 		{
-			name:            "get history",
-			url:             "/api/asdf/history",
-			method:          http.MethodGet,
+			name:   "get history",
+			url:    "/api/key1/history",
+			method: http.MethodGet,
+			expResponseBody: `[
+	{
+		"event":"create",
+		"value":"value1"
+	}
+]
+`,
 			expResponseCode: http.StatusOK,
 		},
 		{
 			name:            "post",
 			url:             "/api",
 			method:          http.MethodPost,
+			reqBody:         `{"key2":"value2"}`,
 			expResponseCode: http.StatusOK,
-			jsonBody:        `{"test":"example"}`,
 		},
 		{
 			name:            "put",
-			url:             "/api/asdf",
+			url:             "/api/key1",
 			method:          http.MethodPut,
+			reqBody:         "value2",
 			expResponseCode: http.StatusOK,
-			jsonBody:        `{"test":"example"}`,
 		},
 		{
 			name:            "delete",
-			url:             "/api/asdf",
+			url:             "/api/key1",
 			method:          http.MethodDelete,
 			expResponseCode: http.StatusOK,
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			var body io.Reader
-			if tc.jsonBody != "" {
-				body = bytes.NewReader([]byte(tc.jsonBody))
+			if err := os.WriteFile(dataFilePath, []byte(initialState), 0666); err != nil {
+				assert.Fail(t, err.Error())
 			}
-			req, err := http.NewRequest(tc.method, tc.url, body)
+
+			var reqBody io.Reader
+			if tc.reqBody != "" {
+				reqBody = bytes.NewReader([]byte(tc.reqBody))
+			}
+			req, err := http.NewRequest(tc.method, tc.url, reqBody)
 			if err != nil {
 				assert.Fail(t, err.Error())
 			}
@@ -65,6 +88,11 @@ func TestMain(t *testing.T) {
 			Mux().ServeHTTP(resp, req)
 
 			assert.Equal(t, tc.expResponseCode, resp.Code)
+			respBody, err := io.ReadAll(resp.Body)
+			if err != nil {
+				assert.Fail(t, err.Error())
+			}
+			assert.Equal(t, tc.expResponseBody, string(respBody))
 		})
 	}
 }
