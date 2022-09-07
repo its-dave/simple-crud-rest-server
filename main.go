@@ -1,7 +1,9 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"os"
 	"strings"
@@ -29,11 +31,78 @@ func Mux() *http.ServeMux {
 		urlParts := strings.Split(url, "/")
 		switch len(urlParts) {
 		case 1:
+			// Create new key:value
+
 			if r.Method != http.MethodPost {
 				// TODO: 405
+				return
 			}
-			// TODO: if key already has a value: 400
-			// TODO: append {"event":"create","value":value} to key array: 202
+
+			// Parse request body
+			body := body(r)
+			var jsonBody interface{}
+			err = json.Unmarshal(body, &jsonBody)
+			if err != nil {
+				// TODO: 400
+				return
+			}
+			mapBody := jsonBody.(map[string]interface{})
+			if len(mapBody) != 1 {
+				// TODO: 400
+				return
+			}
+
+			// Parse stored data
+			data, err := os.ReadFile(dataFilePath)
+			if err != nil {
+				// TODO: 500
+				return
+			}
+			var jsonData interface{}
+			err = json.Unmarshal(data, &jsonData)
+			if err != nil {
+				// TODO: 500
+				return
+			}
+			mapData := jsonData.(map[string]interface{})
+
+			// Set new key:value
+			for key, valueInterface := range mapBody {
+				value, ok := valueInterface.(string)
+				if !ok {
+					// TODO: 400
+					return
+				}
+
+				if _, exists := mapData[key]; exists {
+					// TODO: if key exists but has no value then append to array
+					// TODO: 400
+					return
+				}
+				mapData[key] = []struct {
+					Event string `json:"event"`
+					Value string `json:"value"`
+				}{
+					{
+						Event: "create",
+						Value: value,
+					},
+				}
+			}
+
+			// Write data
+			dataToWrite, err := json.Marshal(mapData)
+			if err != nil {
+				// TODO: 500
+				return
+			}
+			if err := os.WriteFile(dataFilePath, dataToWrite, 0666); err != nil {
+				// TODO: 500
+				return
+			}
+
+			// TODO: 202
+			return
 		case 2:
 			// TODO: /api/key is called, must not be POST
 			switch r.Method {
@@ -63,6 +132,20 @@ func Mux() *http.ServeMux {
 		}
 	})
 	return mux
+}
+
+func body(r *http.Request) []byte {
+	if r.Body == nil {
+		// TODO: 400
+		return nil
+	}
+	body, err := io.ReadAll(r.Body)
+	defer r.Body.Close()
+	if err != nil {
+		// TODO: 500
+		panic(err)
+	}
+	return body
 }
 
 func main() {
