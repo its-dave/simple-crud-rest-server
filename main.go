@@ -38,22 +38,14 @@ func Mux() *http.ServeMux {
 	}
 
 	mux := http.NewServeMux()
+	mux.HandleFunc("/api", handlePostFunc)
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
 		url := strings.TrimPrefix(r.URL.Path, "/")
 		url = strings.TrimSuffix(url, "/")
 		urlParts := strings.Split(url, "/")
 		switch len(urlParts) {
 		case 1:
-			// Create new key:value
-
-			if r.Method != http.MethodPost {
-				w.WriteHeader(http.StatusMethodNotAllowed)
-				return
-			}
-
-			respBody, respCode := handleCreateReq(r)
-			w.WriteHeader(respCode)
-			fmt.Fprint(w, respBody)
+			handlePostFunc(w, r)
 			return
 		case 2:
 			switch r.Method {
@@ -100,6 +92,20 @@ func Mux() *http.ServeMux {
 		}
 	})
 	return mux
+}
+
+// handlePostFunc handles post requests
+func handlePostFunc(w http.ResponseWriter, r *http.Request) {
+	// Create new key:value
+
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	respBody, respCode := handleCreateReq(r)
+	w.WriteHeader(respCode)
+	fmt.Fprint(w, respBody)
 }
 
 // handleDeleteReq handles a delete request and returns the desired response body and code

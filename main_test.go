@@ -83,10 +83,16 @@ func TestMain(t *testing.T) {
 			method:          http.MethodGet,
 			expResponseCode: http.StatusNotFound,
 		},
-		//TODO test /api - currently redirects so 301 - handle with separare HandleFunc?
 		{
 			name:            "post key which has never existed",
 			url:             "/api/",
+			method:          http.MethodPost,
+			reqBody:         `{"key3":"value3"}`,
+			expResponseCode: http.StatusCreated,
+		},
+		{
+			name:            "post key which has never existed (no trailing /)",
+			url:             "/api",
 			method:          http.MethodPost,
 			reqBody:         `{"key3":"value3"}`,
 			expResponseCode: http.StatusCreated,
@@ -100,8 +106,23 @@ func TestMain(t *testing.T) {
 			expResponseBody: ErrorKeyExists,
 		},
 		{
+			name:            "post key which already exists (no trailing /)",
+			url:             "/api",
+			method:          http.MethodPost,
+			reqBody:         `{"key1":"value1"}`,
+			expResponseCode: http.StatusBadRequest,
+			expResponseBody: ErrorKeyExists,
+		},
+		{
 			name:            "post key which has been deleted",
 			url:             "/api/",
+			method:          http.MethodPost,
+			reqBody:         `{"key2":"value2"}`,
+			expResponseCode: http.StatusCreated,
+		},
+		{
+			name:            "post key which has been deleted (no trailing /)",
+			url:             "/api",
 			method:          http.MethodPost,
 			reqBody:         `{"key2":"value2"}`,
 			expResponseCode: http.StatusCreated,
