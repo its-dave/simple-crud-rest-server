@@ -12,6 +12,12 @@ import (
 
 const (
 	dataFilePath = "data.json"
+
+	ErrorUnexpected      = "Unexpected error:"
+	ErrorKeyDeleted      = "Error: the specified key has been deleted"
+	ErrorKeyExists       = "Error: the specified key already exists"
+	ErrorInvalidPutBody  = "Error: request body must be a single value"
+	ErrorInvalidPostBody = "Error: request body must be of the form {\"key\":\"value\"}"
 )
 
 type eventObj struct {
@@ -99,7 +105,7 @@ func Mux() *http.ServeMux {
 func handleDeleteReq(r *http.Request, key string) (string, int) {
 	dataMap, err := storedData()
 	if err != nil {
-		return err.Error(), http.StatusInternalServerError
+		return fmt.Sprint(ErrorUnexpected, err.Error()), http.StatusInternalServerError
 	}
 	keyArray, exists := dataMap[key]
 	if !exists {
@@ -110,17 +116,17 @@ func handleDeleteReq(r *http.Request, key string) (string, int) {
 	// Get value into a usable form
 	array, ok := keyArray.([]interface{})
 	if !ok {
-		return "TODO: error", http.StatusInternalServerError
+		return fmt.Sprint(ErrorUnexpected, "type assertion failed"), http.StatusInternalServerError
 	}
 	latest := array[len(array)-1]
 	latestJson, _ := json.Marshal(latest)
 	var latestEventObj eventObj
 	err = json.Unmarshal(latestJson, &latestEventObj)
 	if err != nil {
-		return err.Error(), http.StatusInternalServerError
+		return fmt.Sprint(ErrorUnexpected, err.Error()), http.StatusInternalServerError
 	}
 	if latestEventObj.Value == "" {
-		return "TODO: key has already been deleted", http.StatusBadRequest
+		return ErrorKeyDeleted, http.StatusBadRequest
 	}
 
 	// Set new key:value
@@ -130,7 +136,7 @@ func handleDeleteReq(r *http.Request, key string) (string, int) {
 
 	err = writeData(dataMap)
 	if err != nil {
-		return err.Error(), http.StatusInternalServerError
+		return fmt.Sprint(ErrorUnexpected, err.Error()), http.StatusInternalServerError
 	}
 	return "", http.StatusNoContent
 }
@@ -140,16 +146,16 @@ func handleUpdateReq(r *http.Request, key string) (string, int) {
 	// Parse request body
 	body, err := body(r)
 	if body == nil {
-		return "TODO: invalid put body", http.StatusBadRequest
+		return ErrorInvalidPutBody, http.StatusBadRequest
 	}
 	if err != nil {
-		return err.Error(), http.StatusInternalServerError
+		return fmt.Sprint(ErrorUnexpected, err.Error()), http.StatusInternalServerError
 	}
 	value := string(body)
 
 	dataMap, err := storedData()
 	if err != nil {
-		return err.Error(), http.StatusInternalServerError
+		return fmt.Sprint(ErrorUnexpected, err.Error()), http.StatusInternalServerError
 	}
 	keyArray, exists := dataMap[key]
 	if !exists {
@@ -160,17 +166,17 @@ func handleUpdateReq(r *http.Request, key string) (string, int) {
 	// Get value into a usable form
 	array, ok := keyArray.([]interface{})
 	if !ok {
-		return "TODO: error", http.StatusInternalServerError
+		return fmt.Sprint(ErrorUnexpected, "type assertion failed"), http.StatusInternalServerError
 	}
 	latest := array[len(array)-1]
 	latestJson, _ := json.Marshal(latest)
 	var latestEventObj eventObj
 	err = json.Unmarshal(latestJson, &latestEventObj)
 	if err != nil {
-		return err.Error(), http.StatusInternalServerError
+		return fmt.Sprint(ErrorUnexpected, err.Error()), http.StatusInternalServerError
 	}
 	if latestEventObj.Value == "" {
-		return "TODO: key has been deleted", http.StatusBadRequest
+		return ErrorKeyDeleted, http.StatusBadRequest
 	}
 
 	// Set new key:value
@@ -181,7 +187,7 @@ func handleUpdateReq(r *http.Request, key string) (string, int) {
 
 	err = writeData(dataMap)
 	if err != nil {
-		return err.Error(), http.StatusInternalServerError
+		return fmt.Sprint(ErrorUnexpected, err.Error()), http.StatusInternalServerError
 	}
 	return "", http.StatusNoContent
 }
@@ -191,29 +197,29 @@ func handleCreateReq(r *http.Request) (string, int) {
 	// Parse request body
 	body, err := body(r)
 	if body == nil {
-		return "TODO: invalid post body", http.StatusBadRequest
+		return ErrorInvalidPostBody, http.StatusBadRequest
 	}
 	if err != nil {
-		return err.Error(), http.StatusInternalServerError
+		return fmt.Sprint(ErrorUnexpected, err.Error()), http.StatusInternalServerError
 	}
 	var bodyJson interface{}
 	if err = json.Unmarshal(body, &bodyJson); err != nil {
-		return "TODO: invalid post body", http.StatusBadRequest
+		return ErrorInvalidPostBody, http.StatusBadRequest
 	}
 	bodyMap := bodyJson.(map[string]interface{})
 	if len(bodyMap) != 1 {
-		return "TODO: invalid post body", http.StatusBadRequest
+		return ErrorInvalidPostBody, http.StatusBadRequest
 	}
 
 	dataMap, err := storedData()
 	if err != nil {
-		return err.Error(), http.StatusInternalServerError
+		return fmt.Sprint(ErrorUnexpected, err.Error()), http.StatusInternalServerError
 	}
 
 	for key, valueInterface := range bodyMap {
 		value, ok := valueInterface.(string)
 		if !ok {
-			return "TODO: invalid post body", http.StatusBadRequest
+			return ErrorInvalidPostBody, http.StatusBadRequest
 		}
 		event := eventObj{
 			Event: "create",
@@ -230,18 +236,18 @@ func handleCreateReq(r *http.Request) (string, int) {
 		// Get value into a usable form
 		array, ok := keyArray.([]interface{})
 		if !ok {
-			return "TODO: error", http.StatusInternalServerError
+			return fmt.Sprint(ErrorUnexpected, "type assertion failed"), http.StatusInternalServerError
 		}
 		latest := array[len(array)-1]
 		latestJson, _ := json.Marshal(latest)
 		var latestEventObj eventObj
 		err = json.Unmarshal(latestJson, &latestEventObj)
 		if err != nil {
-			return err.Error(), http.StatusInternalServerError
+			return fmt.Sprint(ErrorUnexpected, err.Error()), http.StatusInternalServerError
 		}
 
 		if latestEventObj.Value != "" {
-			return "TODO: key already exists", http.StatusBadRequest
+			return ErrorKeyExists, http.StatusBadRequest
 		}
 
 		// Set new key:value
@@ -259,7 +265,7 @@ func handleCreateReq(r *http.Request) (string, int) {
 func handleReadReq(r *http.Request, key string) (string, int) {
 	dataMap, err := storedData()
 	if err != nil {
-		return err.Error(), http.StatusInternalServerError
+		return fmt.Sprint(ErrorUnexpected, err.Error()), http.StatusInternalServerError
 	}
 	keyArray, exists := dataMap[key]
 	if !exists {
@@ -270,14 +276,14 @@ func handleReadReq(r *http.Request, key string) (string, int) {
 	// Get value into a usable form
 	array, ok := keyArray.([]interface{})
 	if !ok {
-		return "TODO: error", http.StatusInternalServerError
+		return fmt.Sprint(ErrorUnexpected, "type assertion failed"), http.StatusInternalServerError
 	}
 	latest := array[len(array)-1]
 	latestJson, _ := json.Marshal(latest)
 	var latestEventObj eventObj
 	err = json.Unmarshal(latestJson, &latestEventObj)
 	if err != nil {
-		return err.Error(), http.StatusInternalServerError
+		return fmt.Sprint(ErrorUnexpected, err.Error()), http.StatusInternalServerError
 	}
 
 	// Key has been deleted
@@ -292,7 +298,7 @@ func handleReadReq(r *http.Request, key string) (string, int) {
 func handleHistoryReq(r *http.Request, key string) (string, int) {
 	dataMap, err := storedData()
 	if err != nil {
-		return err.Error(), http.StatusInternalServerError
+		return fmt.Sprint(ErrorUnexpected, err.Error()), http.StatusInternalServerError
 	}
 	keyArray, exists := dataMap[key]
 	if !exists {
@@ -302,7 +308,7 @@ func handleHistoryReq(r *http.Request, key string) (string, int) {
 
 	array, err := json.Marshal(keyArray)
 	if err != nil {
-		return err.Error(), http.StatusInternalServerError
+		return fmt.Sprint(ErrorUnexpected, err.Error()), http.StatusInternalServerError
 	}
 
 	return string(array), http.StatusOK
