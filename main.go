@@ -40,7 +40,7 @@ func Mux() *http.ServeMux {
 			// Create new key:value
 
 			if r.Method != http.MethodPost {
-				// TODO: 405
+				w.WriteHeader(http.StatusMethodNotAllowed)
 				return
 			}
 
@@ -49,12 +49,12 @@ func Mux() *http.ServeMux {
 			var bodyJson interface{}
 			err = json.Unmarshal(body, &bodyJson)
 			if err != nil {
-				// TODO: 400
+				w.WriteHeader(http.StatusBadRequest)
 				return
 			}
 			bodyMap := bodyJson.(map[string]interface{})
 			if len(bodyMap) != 1 {
-				// TODO: 400
+				w.WriteHeader(http.StatusBadRequest)
 				return
 			}
 
@@ -64,13 +64,13 @@ func Mux() *http.ServeMux {
 			for key, valueInterface := range bodyMap {
 				value, ok := valueInterface.(string)
 				if !ok {
-					// TODO: 400
+					w.WriteHeader(http.StatusBadRequest)
 					return
 				}
 
 				if _, exists := dataMap[key]; exists {
 					// TODO: if key exists but has no value then append to array
-					// TODO: 400
+					w.WriteHeader(http.StatusBadRequest)
 					return
 				}
 				dataMap[key] = []eventObj{
@@ -84,15 +84,15 @@ func Mux() *http.ServeMux {
 			// Write data
 			dataToWrite, err := json.Marshal(dataMap)
 			if err != nil {
-				// TODO: 500
+				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
 			if err := os.WriteFile(dataFilePath, dataToWrite, 0666); err != nil {
-				// TODO: 500
+				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
 
-			// TODO: 202
+			w.WriteHeader(http.StatusAccepted)
 			return
 		case 2:
 			// TODO: /api/key is called, must not be POST
@@ -106,14 +106,14 @@ func Mux() *http.ServeMux {
 
 				// Key does not exist
 				if !exists {
-					// TODO: 404
+					w.WriteHeader(http.StatusNotFound)
 					return
 				}
 
 				// Get value into a usable form
 				array, ok := keyArray.([]interface{})
 				if !ok {
-					// TODO: 500
+					w.WriteHeader(http.StatusInternalServerError)
 					return
 				}
 				latest := array[len(array)-1]
@@ -121,17 +121,16 @@ func Mux() *http.ServeMux {
 				var latestEventObj eventObj
 				err = json.Unmarshal(latestJson, &latestEventObj)
 				if err != nil {
-					// TODO: 500
+					w.WriteHeader(http.StatusInternalServerError)
 					return
 				}
 
 				// Key has been deleted
 				if latestEventObj.Value == "" {
-					// TODO: 204
+					w.WriteHeader(http.StatusNoContent)
 					return
 				}
 				fmt.Fprint(w, latestEventObj.Value)
-				// TODO: 200
 				return
 			case http.MethodPatch, http.MethodPut:
 				// TODO: if key doesn't exist: 404
