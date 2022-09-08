@@ -59,6 +59,12 @@ func TestMain(t *testing.T) {
 			expResponseCode: http.StatusNotFound,
 		},
 		{
+			name:            "get wrong endpoint",
+			url:             "/api/",
+			method:          http.MethodGet,
+			expResponseCode: http.StatusMethodNotAllowed,
+		},
+		{
 			name:            "get history for key which exists",
 			url:             "/api/key1/history",
 			method:          http.MethodGet,
@@ -71,7 +77,12 @@ func TestMain(t *testing.T) {
 			method:          http.MethodGet,
 			expResponseCode: http.StatusNotFound,
 		},
-		//TODO test invalid req body - 400
+		{
+			name:            "get invalid endpoint",
+			url:             "/api/key1/history/other",
+			method:          http.MethodGet,
+			expResponseCode: http.StatusNotFound,
+		},
 		//TODO test /api - currently redirects so 301 - handle with separare HandleFunc?
 		{
 			name:            "post key which has never existed",
@@ -96,6 +107,21 @@ func TestMain(t *testing.T) {
 			expResponseCode: http.StatusCreated,
 		},
 		{
+			name:            "post to wrong endpoint",
+			url:             "/api/key3",
+			method:          http.MethodPost,
+			reqBody:         `{"key3":"value3"}`,
+			expResponseCode: http.StatusMethodNotAllowed,
+		},
+		{
+			name:            "post with bad request body",
+			url:             "/api/",
+			method:          http.MethodPost,
+			reqBody:         "key3",
+			expResponseCode: http.StatusBadRequest,
+			expResponseBody: ErrorInvalidPostBody,
+		},
+		{
 			name:            "put update to key which exists",
 			url:             "/api/key1",
 			method:          http.MethodPut,
@@ -118,6 +144,21 @@ func TestMain(t *testing.T) {
 			expResponseCode: http.StatusNotFound,
 		},
 		{
+			name:            "put to wrong endpoint",
+			url:             "/api/",
+			method:          http.MethodPut,
+			reqBody:         "value4",
+			expResponseCode: http.StatusMethodNotAllowed,
+		},
+		{
+			name:            "put with bad request body",
+			url:             "/api/key1",
+			method:          http.MethodPut,
+			reqBody:         "",
+			expResponseCode: http.StatusBadRequest,
+			expResponseBody: ErrorInvalidPutBody,
+		},
+		{
 			name:            "delete key which exists",
 			url:             "/api/key1",
 			method:          http.MethodDelete,
@@ -135,6 +176,13 @@ func TestMain(t *testing.T) {
 			url:             "/api/key3",
 			method:          http.MethodDelete,
 			expResponseCode: http.StatusNotFound,
+		},
+		{
+			name:            "delete to wrong endpoint",
+			url:             "/api/",
+			method:          http.MethodDelete,
+			reqBody:         "key1",
+			expResponseCode: http.StatusMethodNotAllowed,
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
