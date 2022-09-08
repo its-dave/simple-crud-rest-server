@@ -50,18 +50,22 @@ func Mux() *http.ServeMux {
 			return
 		case 2:
 			// TODO: /api/key is called, must not be POST
+			key := urlParts[1]
 			switch r.Method {
 			case http.MethodGet:
 				// Get value for key
 
-				respBody, respCode := handleReadReq(r, urlParts[1])
+				respBody, respCode := handleReadReq(r, key)
 				w.WriteHeader(respCode)
 				fmt.Fprint(w, respBody)
 				return
 			case http.MethodPatch, http.MethodPut:
-				// TODO: if key doesn't exist: 404
-				// TODO: if key has no value in final array entry: 400
-				// TODO: append {"event":"update","value":value} to key array: 204
+				// Update key:value
+
+				respBody, respCode := handleUpdateReq(r, key)
+				w.WriteHeader(respCode)
+				fmt.Fprint(w, respBody)
+				return
 			case http.MethodDelete:
 				// TODO: if key doesn't exist: 404
 				// TODO: if key has no value in final array entry: 400
@@ -80,6 +84,49 @@ func Mux() *http.ServeMux {
 		}
 	})
 	return mux
+}
+
+// handleUpdateReq handles a put/patch request and returns the desired response body and code
+func handleUpdateReq(r *http.Request, key string) (string, int) {
+	// Parse request body
+	body := body(r)
+	value := string(body)
+
+	dataMap, err := storedData()
+	if err != nil {
+		return err.Error(), http.StatusInternalServerError
+	}
+	keyArray, exists := dataMap[key]
+	if !exists {
+		// Key does not exist
+		return "", http.StatusNotFound
+	}
+
+	// Get value into a usable form
+	array, ok := keyArray.([]interface{})
+	if !ok {
+		return err.Error(), http.StatusInternalServerError
+	}
+	latest := array[len(array)-1]
+	latestJson, _ := json.Marshal(latest)
+	var latestEventObj eventObj
+	err = json.Unmarshal(latestJson, &latestEventObj)
+	if err != nil {
+		return err.Error(), http.StatusInternalServerError
+	}
+	// TODO: if key has no value in final array entry: 400
+
+	// Set new key:value
+	dataMap[key] = append(array, eventObj{
+		Event: "update",
+		Value: value,
+	})
+
+	err = writeData(dataMap)
+	if err != nil {
+		return err.Error(), http.StatusInternalServerError
+	}
+	return "", http.StatusNoContent
 }
 
 // handleCreateReq handles a post request and returns the desired response body and code
@@ -120,12 +167,8 @@ func handleCreateReq(r *http.Request) (string, int) {
 		}
 	}
 
-	// Write data
-	dataToWrite, err := json.Marshal(dataMap)
+	err = writeData(dataMap)
 	if err != nil {
-		return err.Error(), http.StatusInternalServerError
-	}
-	if err := os.WriteFile(dataFilePath, dataToWrite, 0666); err != nil {
 		return err.Error(), http.StatusInternalServerError
 	}
 	return "", http.StatusAccepted
@@ -138,9 +181,8 @@ func handleReadReq(r *http.Request, key string) (string, int) {
 		return err.Error(), http.StatusInternalServerError
 	}
 	keyArray, exists := dataMap[key]
-
-	// Key does not exist
 	if !exists {
+		// Key does not exist
 		return "", http.StatusNotFound
 	}
 
@@ -178,6 +220,18 @@ func storedData() (map[string]interface{}, error) {
 		return nil, err
 	}
 	return jsonData.(map[string]interface{}), nil
+}
+
+// writeData saves the specified JSON data to the data file
+func writeData(dataMap map[string]interface{}) error {
+	dataToWrite, err := json.Marshal(dataMap)
+	if err != nil {
+		return err
+	}
+	if err := os.WriteFile(dataFilePath, dataToWrite, 0666); err != nil {
+		return err
+	}
+	return nil
 }
 
 func body(r *http.Request) []byte {
