@@ -132,7 +132,7 @@ func TestMain(t *testing.T) {
 		},
 		{
 			name:            "delete key which has never existed",
-			url:             "/api/key1",
+			url:             "/api/key3",
 			method:          http.MethodDelete,
 			expResponseCode: http.StatusNotFound,
 		},

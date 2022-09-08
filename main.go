@@ -67,9 +67,12 @@ func Mux() *http.ServeMux {
 				fmt.Fprint(w, respBody)
 				return
 			case http.MethodDelete:
-				// TODO: if key doesn't exist: 404
-				// TODO: if key has no value in final array entry: 400
-				// TODO: append {"event":"delete"} to key array: 204
+				// Delete value for key
+
+				respBody, respCode := handleDeleteReq(r, key)
+				w.WriteHeader(respCode)
+				fmt.Fprint(w, respBody)
+				return
 			default:
 				// TODO: 405
 			}
@@ -84,6 +87,46 @@ func Mux() *http.ServeMux {
 		}
 	})
 	return mux
+}
+
+// handleDeleteReq handles a delete request and returns the desired response body and code
+func handleDeleteReq(r *http.Request, key string) (string, int) {
+	dataMap, err := storedData()
+	if err != nil {
+		return err.Error(), http.StatusInternalServerError
+	}
+	keyArray, exists := dataMap[key]
+	if !exists {
+		// Key does not exist
+		return "", http.StatusNotFound
+	}
+
+	// Get value into a usable form
+	array, ok := keyArray.([]interface{})
+	if !ok {
+		return err.Error(), http.StatusInternalServerError
+	}
+	latest := array[len(array)-1]
+	latestJson, _ := json.Marshal(latest)
+	var latestEventObj eventObj
+	err = json.Unmarshal(latestJson, &latestEventObj)
+	if err != nil {
+		return err.Error(), http.StatusInternalServerError
+	}
+	if latestEventObj.Value == "" {
+		return "TODO: key has already been deleted", http.StatusBadRequest
+	}
+
+	// Set new key:value
+	dataMap[key] = append(array, eventObj{
+		Event: "delete",
+	})
+
+	err = writeData(dataMap)
+	if err != nil {
+		return err.Error(), http.StatusInternalServerError
+	}
+	return "", http.StatusNoContent
 }
 
 // handleUpdateReq handles a put/patch request and returns the desired response body and code
