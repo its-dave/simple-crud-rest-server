@@ -72,21 +72,22 @@ func TestMain(t *testing.T) {
 		},
 		{
 			name:            "post key which has never existed",
-			url:             "/api",
+			url:             "/api/",
 			method:          http.MethodPost,
 			reqBody:         `{"key3":"value3"}`,
 			expResponseCode: http.StatusCreated,
 		},
 		{
 			name:            "post key which already exists",
-			url:             "/api",
+			url:             "/api/",
 			method:          http.MethodPost,
 			reqBody:         `{"key1":"value1"}`,
 			expResponseCode: http.StatusBadRequest,
+			expResponseBody: ErrorKeyExists,
 		},
 		{
 			name:            "post key which has been deleted",
-			url:             "/api",
+			url:             "/api/",
 			method:          http.MethodPost,
 			reqBody:         `{"key2":"value2"}`,
 			expResponseCode: http.StatusCreated,
@@ -104,6 +105,7 @@ func TestMain(t *testing.T) {
 			method:          http.MethodPut,
 			reqBody:         "value4",
 			expResponseCode: http.StatusBadRequest,
+			expResponseBody: ErrorKeyDeleted,
 		},
 		{
 			name:            "put update to key which has never existed",
@@ -123,6 +125,7 @@ func TestMain(t *testing.T) {
 			url:             "/api/key2",
 			method:          http.MethodDelete,
 			expResponseCode: http.StatusBadRequest,
+			expResponseBody: ErrorKeyDeleted,
 		},
 		{
 			name:            "delete key which has never existed",
