@@ -49,7 +49,6 @@ func Mux() *http.ServeMux {
 			fmt.Fprint(w, respBody)
 			return
 		case 2:
-			// TODO: /api/key is called, must not be POST
 			switch r.Method {
 			case http.MethodGet:
 				// Get value for key
@@ -211,30 +210,49 @@ func handleCreateReq(r *http.Request) (string, int) {
 		return err.Error(), http.StatusInternalServerError
 	}
 
-	// Set new key:value
 	for key, valueInterface := range bodyMap {
 		value, ok := valueInterface.(string)
 		if !ok {
 			return "TODO: invalid post body", http.StatusBadRequest
 		}
+		event := eventObj{
+			Event: "create",
+			Value: value,
+		}
 
-		if _, exists := dataMap[key]; exists {
-			// TODO: if key exists but has no value then append to array
+		keyArray, exists := dataMap[key]
+		if !exists {
+			// Set new key:value
+			dataMap[key] = []eventObj{event}
+			continue
+		}
+
+		// Get value into a usable form
+		array, ok := keyArray.([]interface{})
+		if !ok {
+			return "TODO: error", http.StatusInternalServerError
+		}
+		latest := array[len(array)-1]
+		latestJson, _ := json.Marshal(latest)
+		var latestEventObj eventObj
+		err = json.Unmarshal(latestJson, &latestEventObj)
+		if err != nil {
+			return err.Error(), http.StatusInternalServerError
+		}
+
+		if latestEventObj.Value != "" {
 			return "TODO: key already exists", http.StatusBadRequest
 		}
-		dataMap[key] = []eventObj{
-			{
-				Event: "create",
-				Value: value,
-			},
-		}
+
+		// Set new key:value
+		dataMap[key] = append(array, event)
 	}
 
 	err = writeData(dataMap)
 	if err != nil {
 		return err.Error(), http.StatusInternalServerError
 	}
-	return "", http.StatusAccepted
+	return "", http.StatusCreated
 }
 
 // handleReadReq handles a get request and returns the desired response body and code
