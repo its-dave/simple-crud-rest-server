@@ -186,9 +186,9 @@ func Test_CRCRURDRHH(t *testing.T) {
 	// Verify key1:value1
 	requestAndCheckResponse(t, mux, http.MethodGet, "/api/key1", "", http.StatusOK, "value1")
 	// Set key2:value3
-	requestAndCheckResponse(t, mux, http.MethodPost, "/api/", `{"key2":"value2"}`, http.StatusCreated, "")
+	requestAndCheckResponse(t, mux, http.MethodPost, "/api/", `{"key2":"value3"}`, http.StatusCreated, "")
 	// Verify key2:value3
-	requestAndCheckResponse(t, mux, http.MethodGet, "/api/key1", "", http.StatusOK, "value2")
+	requestAndCheckResponse(t, mux, http.MethodGet, "/api/key2", "", http.StatusOK, "value3")
 	// Set key1:value2
 	requestAndCheckResponse(t, mux, http.MethodPut, "/api/key1", "value2", http.StatusNoContent, "")
 	// Verify key1:value2
