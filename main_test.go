@@ -78,8 +78,14 @@ func TestMain(t *testing.T) {
 			expResponseCode: http.StatusNotFound,
 		},
 		{
-			name:            "get invalid endpoint",
+			name:            "get too long endpoint",
 			url:             "/api/key1/history/other",
+			method:          http.MethodGet,
+			expResponseCode: http.StatusNotFound,
+		},
+		{
+			name:            "get invalid endpoint",
+			url:             "/api/key1/incorrect",
 			method:          http.MethodGet,
 			expResponseCode: http.StatusNotFound,
 		},
