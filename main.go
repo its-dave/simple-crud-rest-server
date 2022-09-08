@@ -25,6 +25,7 @@ type eventObj struct {
 	Value string `json:"value"`
 }
 
+// Mux creates a simple rest server using an existing data file if found
 func Mux() *http.ServeMux {
 	// Ensure data file exists
 	_, err := os.Stat(dataFilePath)
@@ -113,18 +114,15 @@ func handleDeleteReq(r *http.Request, key string) (string, int) {
 		return "", http.StatusNotFound
 	}
 
-	// Get value into a usable form
-	array, ok := keyArray.([]interface{})
-	if !ok {
-		return fmt.Sprint(ErrorUnexpected, "type assertion failed"), http.StatusInternalServerError
-	}
-	latest := array[len(array)-1]
-	latestJson, _ := json.Marshal(latest)
-	var latestEventObj eventObj
-	err = json.Unmarshal(latestJson, &latestEventObj)
+	array, err := sliceFromArray(keyArray)
 	if err != nil {
 		return fmt.Sprint(ErrorUnexpected, err.Error()), http.StatusInternalServerError
 	}
+	latestEventObj, err := latestEventFromSlice(array)
+	if err != nil {
+		return fmt.Sprint(ErrorUnexpected, err.Error()), http.StatusInternalServerError
+	}
+
 	if latestEventObj.Value == "" {
 		return ErrorKeyDeleted, http.StatusBadRequest
 	}
@@ -163,18 +161,15 @@ func handleUpdateReq(r *http.Request, key string) (string, int) {
 		return "", http.StatusNotFound
 	}
 
-	// Get value into a usable form
-	array, ok := keyArray.([]interface{})
-	if !ok {
-		return fmt.Sprint(ErrorUnexpected, "type assertion failed"), http.StatusInternalServerError
-	}
-	latest := array[len(array)-1]
-	latestJson, _ := json.Marshal(latest)
-	var latestEventObj eventObj
-	err = json.Unmarshal(latestJson, &latestEventObj)
+	array, err := sliceFromArray(keyArray)
 	if err != nil {
 		return fmt.Sprint(ErrorUnexpected, err.Error()), http.StatusInternalServerError
 	}
+	latestEventObj, err := latestEventFromSlice(array)
+	if err != nil {
+		return fmt.Sprint(ErrorUnexpected, err.Error()), http.StatusInternalServerError
+	}
+
 	if latestEventObj.Value == "" {
 		return ErrorKeyDeleted, http.StatusBadRequest
 	}
@@ -233,15 +228,11 @@ func handleCreateReq(r *http.Request) (string, int) {
 			continue
 		}
 
-		// Get value into a usable form
-		array, ok := keyArray.([]interface{})
-		if !ok {
-			return fmt.Sprint(ErrorUnexpected, "type assertion failed"), http.StatusInternalServerError
+		array, err := sliceFromArray(keyArray)
+		if err != nil {
+			return fmt.Sprint(ErrorUnexpected, err.Error()), http.StatusInternalServerError
 		}
-		latest := array[len(array)-1]
-		latestJson, _ := json.Marshal(latest)
-		var latestEventObj eventObj
-		err = json.Unmarshal(latestJson, &latestEventObj)
+		latestEventObj, err := latestEventFromSlice(array)
 		if err != nil {
 			return fmt.Sprint(ErrorUnexpected, err.Error()), http.StatusInternalServerError
 		}
@@ -273,15 +264,11 @@ func handleReadReq(r *http.Request, key string) (string, int) {
 		return "", http.StatusNotFound
 	}
 
-	// Get value into a usable form
-	array, ok := keyArray.([]interface{})
-	if !ok {
-		return fmt.Sprint(ErrorUnexpected, "type assertion failed"), http.StatusInternalServerError
+	array, err := sliceFromArray(keyArray)
+	if err != nil {
+		return fmt.Sprint(ErrorUnexpected, err.Error()), http.StatusInternalServerError
 	}
-	latest := array[len(array)-1]
-	latestJson, _ := json.Marshal(latest)
-	var latestEventObj eventObj
-	err = json.Unmarshal(latestJson, &latestEventObj)
+	latestEventObj, err := latestEventFromSlice(array)
 	if err != nil {
 		return fmt.Sprint(ErrorUnexpected, err.Error()), http.StatusInternalServerError
 	}
@@ -327,6 +314,27 @@ func storedData() (map[string]interface{}, error) {
 		return nil, err
 	}
 	return jsonData.(map[string]interface{}), nil
+}
+
+// sliceFromArray parses the specified data for a specific key and returns it as a slice
+func sliceFromArray(keyArray interface{}) ([]interface{}, error) {
+	array, ok := keyArray.([]interface{})
+	if !ok {
+		return nil, errors.New("type assertion failed")
+	}
+	return array, nil
+}
+
+// latestEventFromSlice parses the specified slice for a key and returns the final element
+func latestEventFromSlice(array []interface{}) (eventObj, error) {
+	var latestEventObj eventObj
+	latest := array[len(array)-1]
+	latestJson, _ := json.Marshal(latest)
+	err := json.Unmarshal(latestJson, &latestEventObj)
+	if err != nil {
+		return latestEventObj, err
+	}
+	return latestEventObj, nil
 }
 
 // writeData saves the specified JSON data to the data file
