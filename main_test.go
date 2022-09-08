@@ -25,7 +25,8 @@ func TestMain(t *testing.T) {
 			"value":"value1"
 		},
 		{
-			"event":"delete"
+			"event":"delete",
+			"value":""
 		}
 	]
 }
@@ -159,7 +160,7 @@ func Test_CRURDRH(t *testing.T) {
 	// Verify key1 unset
 	requestAndCheckResponse(t, mux, http.MethodGet, "/api/key1", "", http.StatusNoContent, "")
 	// Verify key1 history
-	requestAndCheckResponse(t, mux, http.MethodGet, "/api/key1/history", "", http.StatusOK, `[{"event":"create","value":"value1"},{"event":"update","value":"value2"},{"event":"delete"}]`)
+	requestAndCheckResponse(t, mux, http.MethodGet, "/api/key1/history", "", http.StatusOK, `[{"event":"create","value":"value1"},{"event":"update","value":"value2"},{"event":"delete","value":""}]`)
 }
 
 func Test_CDCUH(t *testing.T) {
@@ -174,7 +175,7 @@ func Test_CDCUH(t *testing.T) {
 	// Set key1:value2
 	requestAndCheckResponse(t, mux, http.MethodPut, "/api/key1", "value2", http.StatusNoContent, "")
 	// Verify key1 history
-	requestAndCheckResponse(t, mux, http.MethodGet, "/api/key1/history", "", http.StatusOK, `[{"event":"create","value":"value1"},{"event":"delete"},{"event":"create","value":"value1"},{"event":"update","value":"value2"}]`)
+	requestAndCheckResponse(t, mux, http.MethodGet, "/api/key1/history", "", http.StatusOK, `[{"event":"create","value":"value1"},{"event":"delete","value":""},{"event":"create","value":"value1"},{"event":"update","value":"value2"}]`)
 }
 
 func Test_CRCRURDRHH(t *testing.T) {
@@ -199,7 +200,7 @@ func Test_CRCRURDRHH(t *testing.T) {
 	// Verify key1 history
 	requestAndCheckResponse(t, mux, http.MethodGet, "/api/key1/history", "", http.StatusOK, `[{"event":"create","value":"value1"},{"event":"update","value":"value2"}]`)
 	// Verify key2 history
-	requestAndCheckResponse(t, mux, http.MethodGet, "/api/key2/history", "", http.StatusOK, `[{"event":"create","value":"value3"},{"event":"delete"}]`)
+	requestAndCheckResponse(t, mux, http.MethodGet, "/api/key2/history", "", http.StatusOK, `[{"event":"create","value":"value3"},{"event":"delete","value":""}]`)
 }
 
 // initialiseData sets the data file to the specified data to ensure a known testing state
