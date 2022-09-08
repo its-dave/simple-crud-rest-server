@@ -139,7 +139,13 @@ func handleDeleteReq(r *http.Request, key string) (string, int) {
 // handleUpdateReq handles a put/patch request and returns the desired response body and code
 func handleUpdateReq(r *http.Request, key string) (string, int) {
 	// Parse request body
-	body := body(r)
+	body, err := body(r)
+	if body == nil {
+		return "TODO: invalid put body", http.StatusBadRequest
+	}
+	if err != nil {
+		return err.Error(), http.StatusInternalServerError
+	}
 	value := string(body)
 
 	dataMap, err := storedData()
@@ -184,10 +190,15 @@ func handleUpdateReq(r *http.Request, key string) (string, int) {
 // handleCreateReq handles a post request and returns the desired response body and code
 func handleCreateReq(r *http.Request) (string, int) {
 	// Parse request body
-	body := body(r)
-	var bodyJson interface{}
-	err := json.Unmarshal(body, &bodyJson)
+	body, err := body(r)
+	if body == nil {
+		return "TODO: invalid post body", http.StatusBadRequest
+	}
 	if err != nil {
+		return err.Error(), http.StatusInternalServerError
+	}
+	var bodyJson interface{}
+	if err = json.Unmarshal(body, &bodyJson); err != nil {
 		return "TODO: invalid post body", http.StatusBadRequest
 	}
 	bodyMap := bodyJson.(map[string]interface{})
@@ -306,18 +317,17 @@ func writeData(dataMap map[string]interface{}) error {
 	return nil
 }
 
-func body(r *http.Request) []byte {
+// body gets the body data from the specified request
+func body(r *http.Request) ([]byte, error) {
 	if r.Body == nil {
-		// TODO: 400
-		return nil
+		return nil, nil
 	}
 	body, err := io.ReadAll(r.Body)
 	defer r.Body.Close()
 	if err != nil {
-		// TODO: 500
-		panic(err)
+		return nil, err
 	}
-	return body
+	return body, nil
 }
 
 func main() {
