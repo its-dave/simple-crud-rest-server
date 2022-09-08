@@ -114,7 +114,9 @@ func handleUpdateReq(r *http.Request, key string) (string, int) {
 	if err != nil {
 		return err.Error(), http.StatusInternalServerError
 	}
-	// TODO: if key has no value in final array entry: 400
+	if latestEventObj.Value == "" {
+		return "TODO: key has been deleted", http.StatusBadRequest
+	}
 
 	// Set new key:value
 	dataMap[key] = append(array, eventObj{
