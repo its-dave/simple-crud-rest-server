@@ -72,7 +72,7 @@ func TestMain(t *testing.T) {
 		},
 		{
 			name:            "get history for key which has never existed",
-			url:             "/api/key1/history",
+			url:             "/api/key3/history",
 			method:          http.MethodGet,
 			expResponseCode: http.StatusNotFound,
 		},

@@ -50,26 +50,25 @@ func Mux() *http.ServeMux {
 			return
 		case 2:
 			// TODO: /api/key is called, must not be POST
-			key := urlParts[1]
 			switch r.Method {
 			case http.MethodGet:
 				// Get value for key
 
-				respBody, respCode := handleReadReq(r, key)
+				respBody, respCode := handleReadReq(r, urlParts[1])
 				w.WriteHeader(respCode)
 				fmt.Fprint(w, respBody)
 				return
 			case http.MethodPatch, http.MethodPut:
 				// Update key:value
 
-				respBody, respCode := handleUpdateReq(r, key)
+				respBody, respCode := handleUpdateReq(r, urlParts[1])
 				w.WriteHeader(respCode)
 				fmt.Fprint(w, respBody)
 				return
 			case http.MethodDelete:
 				// Delete value for key
 
-				respBody, respCode := handleDeleteReq(r, key)
+				respBody, respCode := handleDeleteReq(r, urlParts[1])
 				w.WriteHeader(respCode)
 				fmt.Fprint(w, respBody)
 				return
@@ -78,12 +77,17 @@ func Mux() *http.ServeMux {
 				return
 			}
 		case 3:
+			// Get history for key
+
 			if urlParts[2] != "history" {
 				w.WriteHeader(http.StatusNotFound)
 				return
 			}
-			// TODO: if key doesn't exist: 404
-			// TODO: print key array to w
+
+			respBody, respCode := handleHistoryReq(r, urlParts[1])
+			w.WriteHeader(respCode)
+			fmt.Fprint(w, respBody)
+			return
 		default:
 			w.WriteHeader(http.StatusNotFound)
 			return
@@ -107,7 +111,7 @@ func handleDeleteReq(r *http.Request, key string) (string, int) {
 	// Get value into a usable form
 	array, ok := keyArray.([]interface{})
 	if !ok {
-		return err.Error(), http.StatusInternalServerError
+		return "TODO: error", http.StatusInternalServerError
 	}
 	latest := array[len(array)-1]
 	latestJson, _ := json.Marshal(latest)
@@ -151,7 +155,7 @@ func handleUpdateReq(r *http.Request, key string) (string, int) {
 	// Get value into a usable form
 	array, ok := keyArray.([]interface{})
 	if !ok {
-		return err.Error(), http.StatusInternalServerError
+		return "TODO: error", http.StatusInternalServerError
 	}
 	latest := array[len(array)-1]
 	latestJson, _ := json.Marshal(latest)
@@ -237,7 +241,7 @@ func handleReadReq(r *http.Request, key string) (string, int) {
 	// Get value into a usable form
 	array, ok := keyArray.([]interface{})
 	if !ok {
-		return err.Error(), http.StatusInternalServerError
+		return "TODO: error", http.StatusInternalServerError
 	}
 	latest := array[len(array)-1]
 	latestJson, _ := json.Marshal(latest)
@@ -253,6 +257,26 @@ func handleReadReq(r *http.Request, key string) (string, int) {
 	}
 
 	return latestEventObj.Value, http.StatusOK
+}
+
+// handleHistoryReq handles a get history request and returns the desired response body and code
+func handleHistoryReq(r *http.Request, key string) (string, int) {
+	dataMap, err := storedData()
+	if err != nil {
+		return err.Error(), http.StatusInternalServerError
+	}
+	keyArray, exists := dataMap[key]
+	if !exists {
+		// Key does not exist
+		return "", http.StatusNotFound
+	}
+
+	array, err := json.Marshal(keyArray)
+	if err != nil {
+		return err.Error(), http.StatusInternalServerError
+	}
+
+	return string(array), http.StatusOK
 }
 
 // storedData parses the stored JSON data and returns it as a map
