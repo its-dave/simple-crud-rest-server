@@ -58,16 +58,10 @@ func TestMain(t *testing.T) {
 			expResponseCode: http.StatusNotFound,
 		},
 		{
-			name:   "get history for key which exists",
-			url:    "/api/key1/history",
-			method: http.MethodGet,
-			expResponseBody: `[
-	{
-		"event":"create",
-		"value":"value1"
-	}
-]
-`,
+			name:            "get history for key which exists",
+			url:             "/api/key1/history",
+			method:          http.MethodGet,
+			expResponseBody: `[{"event":"create","value":"value1"}]`,
 			expResponseCode: http.StatusOK,
 		},
 		{
