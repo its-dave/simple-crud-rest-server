@@ -74,16 +74,19 @@ func Mux() *http.ServeMux {
 				fmt.Fprint(w, respBody)
 				return
 			default:
-				// TODO: 405
+				w.WriteHeader(http.StatusMethodNotAllowed)
+				return
 			}
 		case 3:
 			if urlParts[2] != "history" {
-				// TODO: 404
+				w.WriteHeader(http.StatusNotFound)
+				return
 			}
 			// TODO: if key doesn't exist: 404
 			// TODO: print key array to w
 		default:
-			// TODO: 404
+			w.WriteHeader(http.StatusNotFound)
+			return
 		}
 	})
 	return mux
