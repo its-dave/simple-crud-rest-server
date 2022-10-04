@@ -325,5 +325,5 @@ func requestAndCheckResponse(t *testing.T, mux *http.ServeMux, reqMethod, reqUrl
 		assert.Fail(t, err.Error())
 	}
 	assert.Equal(t, expRespBody, string(respBody))
-	assert.Equal(t, expRespContentType, string(resp.Result().Header.Get("Content-Type")))
+	assert.Equal(t, expRespContentType, string(resp.Result().Header.Get(contentType)))
 }
