@@ -20,8 +20,8 @@ const (
 	ErrorUnexpected      = "Unexpected error:"
 	ErrorKeyDeleted      = "Error: the specified key has been deleted"
 	ErrorKeyExists       = "Error: the specified key already exists"
-	ErrorInvalidPutBody  = "Error: request body must be a single value"
-	ErrorInvalidPostBody = "Error: request body must be of the form {\"key\":\"value\"}"
+	ErrorInvalidPutBody  = "Error: request body must be a single value with Content-Type text/plain"
+	ErrorInvalidPostBody = "Error: request body must be of the form {\"key\":\"value\"} with Content-Type application/json"
 )
 
 type eventObj struct {
@@ -156,6 +156,10 @@ func handleDeleteReq(r *http.Request, key string) (string, int) {
 
 // handleUpdateReq handles a put/patch request and returns the desired response body and code
 func handleUpdateReq(r *http.Request, key string) (string, int) {
+	if r.Header.Get(contentType) != contentTypeText {
+		return ErrorInvalidPutBody, http.StatusUnsupportedMediaType
+	}
+
 	// Parse request body
 	body, err := body(r)
 	if body == nil {
@@ -204,6 +208,10 @@ func handleUpdateReq(r *http.Request, key string) (string, int) {
 
 // handleCreateReq handles a post request and returns the desired response body and code
 func handleCreateReq(r *http.Request) (string, int) {
+	if r.Header.Get(contentType) != contentTypeJson {
+		return ErrorInvalidPostBody, http.StatusUnsupportedMediaType
+	}
+
 	// Parse request body
 	body, err := body(r)
 	if body == nil {

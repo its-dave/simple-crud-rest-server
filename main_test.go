@@ -36,6 +36,7 @@ func TestMain(t *testing.T) {
 		url             string
 		method          string
 		reqBody         string
+		reqContentType  string
 		expResponseBody string
 		expResponseCode int
 		expContentType  string
@@ -100,6 +101,7 @@ func TestMain(t *testing.T) {
 			url:             "/api/",
 			method:          http.MethodPost,
 			reqBody:         `{"key3":"value3"}`,
+			reqContentType:  contentTypeJson,
 			expResponseCode: http.StatusCreated,
 			expContentType:  contentTypeText,
 		},
@@ -108,6 +110,7 @@ func TestMain(t *testing.T) {
 			url:             "/api",
 			method:          http.MethodPost,
 			reqBody:         `{"key3":"value3"}`,
+			reqContentType:  contentTypeJson,
 			expResponseCode: http.StatusCreated,
 			expContentType:  contentTypeText,
 		},
@@ -116,6 +119,7 @@ func TestMain(t *testing.T) {
 			url:             "/api/",
 			method:          http.MethodPost,
 			reqBody:         `{"key1":"value1"}`,
+			reqContentType:  contentTypeJson,
 			expResponseCode: http.StatusBadRequest,
 			expResponseBody: ErrorKeyExists,
 			expContentType:  contentTypeText,
@@ -125,6 +129,7 @@ func TestMain(t *testing.T) {
 			url:             "/api",
 			method:          http.MethodPost,
 			reqBody:         `{"key1":"value1"}`,
+			reqContentType:  contentTypeJson,
 			expResponseCode: http.StatusBadRequest,
 			expResponseBody: ErrorKeyExists,
 			expContentType:  contentTypeText,
@@ -134,6 +139,7 @@ func TestMain(t *testing.T) {
 			url:             "/api/",
 			method:          http.MethodPost,
 			reqBody:         `{"key2":"value2"}`,
+			reqContentType:  contentTypeJson,
 			expResponseCode: http.StatusCreated,
 			expContentType:  contentTypeText,
 		},
@@ -142,6 +148,7 @@ func TestMain(t *testing.T) {
 			url:             "/api",
 			method:          http.MethodPost,
 			reqBody:         `{"key2":"value2"}`,
+			reqContentType:  contentTypeJson,
 			expResponseCode: http.StatusCreated,
 			expContentType:  contentTypeText,
 		},
@@ -150,6 +157,7 @@ func TestMain(t *testing.T) {
 			url:             "/api/key3",
 			method:          http.MethodPost,
 			reqBody:         `{"key3":"value3"}`,
+			reqContentType:  contentTypeJson,
 			expResponseCode: http.StatusMethodNotAllowed,
 		},
 		{
@@ -157,7 +165,28 @@ func TestMain(t *testing.T) {
 			url:             "/api/",
 			method:          http.MethodPost,
 			reqBody:         "key3",
+			reqContentType:  contentTypeJson,
 			expResponseCode: http.StatusBadRequest,
+			expResponseBody: ErrorInvalidPostBody,
+			expContentType:  contentTypeText,
+		},
+		{
+			name:            "post with bad content-type header",
+			url:             "/api/",
+			method:          http.MethodPost,
+			reqBody:         `{"key3":"value3"}`,
+			reqContentType:  contentTypeText,
+			expResponseCode: http.StatusUnsupportedMediaType,
+			expResponseBody: ErrorInvalidPostBody,
+			expContentType:  contentTypeText,
+		},
+		{
+			name:            "post with bad request body and content-type header",
+			url:             "/api/",
+			method:          http.MethodPost,
+			reqBody:         "key3",
+			reqContentType:  contentTypeText,
+			expResponseCode: http.StatusUnsupportedMediaType,
 			expResponseBody: ErrorInvalidPostBody,
 			expContentType:  contentTypeText,
 		},
@@ -166,6 +195,7 @@ func TestMain(t *testing.T) {
 			url:             "/api/key1",
 			method:          http.MethodPut,
 			reqBody:         "value4",
+			reqContentType:  contentTypeText,
 			expResponseCode: http.StatusNoContent,
 			expContentType:  contentTypeText,
 		},
@@ -174,6 +204,7 @@ func TestMain(t *testing.T) {
 			url:             "/api/key2",
 			method:          http.MethodPut,
 			reqBody:         "value4",
+			reqContentType:  contentTypeText,
 			expResponseCode: http.StatusBadRequest,
 			expResponseBody: ErrorKeyDeleted,
 			expContentType:  contentTypeText,
@@ -183,6 +214,7 @@ func TestMain(t *testing.T) {
 			url:             "/api/key3",
 			method:          http.MethodPut,
 			reqBody:         "value4",
+			reqContentType:  contentTypeText,
 			expResponseCode: http.StatusNotFound,
 			expContentType:  contentTypeText,
 		},
@@ -191,6 +223,7 @@ func TestMain(t *testing.T) {
 			url:             "/api/",
 			method:          http.MethodPut,
 			reqBody:         "value4",
+			reqContentType:  contentTypeText,
 			expResponseCode: http.StatusMethodNotAllowed,
 		},
 		{
@@ -198,7 +231,28 @@ func TestMain(t *testing.T) {
 			url:             "/api/key1",
 			method:          http.MethodPut,
 			reqBody:         "",
+			reqContentType:  contentTypeText,
 			expResponseCode: http.StatusBadRequest,
+			expResponseBody: ErrorInvalidPutBody,
+			expContentType:  contentTypeText,
+		},
+		{
+			name:            "put with bad content-type header",
+			url:             "/api/key1",
+			method:          http.MethodPut,
+			reqBody:         "value4",
+			reqContentType:  contentTypeJson,
+			expResponseCode: http.StatusUnsupportedMediaType,
+			expResponseBody: ErrorInvalidPutBody,
+			expContentType:  contentTypeText,
+		},
+		{
+			name:            "put with bad request body and content-type header",
+			url:             "/api/key1",
+			method:          http.MethodPut,
+			reqBody:         "",
+			reqContentType:  contentTypeJson,
+			expResponseCode: http.StatusUnsupportedMediaType,
 			expResponseBody: ErrorInvalidPutBody,
 			expContentType:  contentTypeText,
 		},
@@ -229,12 +283,13 @@ func TestMain(t *testing.T) {
 			url:             "/api/",
 			method:          http.MethodDelete,
 			reqBody:         "key1",
+			reqContentType:  contentTypeText,
 			expResponseCode: http.StatusMethodNotAllowed,
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			initialiseData(t, initialState)
-			requestAndCheckResponse(t, Mux(), tc.method, tc.url, tc.reqBody, tc.expResponseCode, tc.expResponseBody, tc.expContentType)
+			requestAndCheckResponse(t, Mux(), tc.method, tc.url, tc.reqBody, tc.reqContentType, tc.expResponseCode, tc.expResponseBody, tc.expContentType)
 		})
 	}
 }
@@ -243,59 +298,59 @@ func Test_CRURDRH(t *testing.T) {
 	initialiseData(t, "{}")
 	mux := Mux()
 	// Set key1:value1
-	requestAndCheckResponse(t, mux, http.MethodPost, "/api/", `{"key1":"value1"}`, http.StatusCreated, "", contentTypeText)
+	requestAndCheckResponse(t, mux, http.MethodPost, "/api/", `{"key1":"value1"}`, contentTypeJson, http.StatusCreated, "", contentTypeText)
 	// Verify key1:value1
-	requestAndCheckResponse(t, mux, http.MethodGet, "/api/key1", "", http.StatusOK, "value1", contentTypeText)
+	requestAndCheckResponse(t, mux, http.MethodGet, "/api/key1", "", "", http.StatusOK, "value1", contentTypeText)
 	// Set key1:value2
-	requestAndCheckResponse(t, mux, http.MethodPut, "/api/key1", "value2", http.StatusNoContent, "", contentTypeText)
+	requestAndCheckResponse(t, mux, http.MethodPut, "/api/key1", "value2", contentTypeText, http.StatusNoContent, "", contentTypeText)
 	// Verify key1:value2
-	requestAndCheckResponse(t, mux, http.MethodGet, "/api/key1", "", http.StatusOK, "value2", contentTypeText)
+	requestAndCheckResponse(t, mux, http.MethodGet, "/api/key1", "", "", http.StatusOK, "value2", contentTypeText)
 	// Delete key1
-	requestAndCheckResponse(t, mux, http.MethodDelete, "/api/key1", "", http.StatusNoContent, "", contentTypeText)
+	requestAndCheckResponse(t, mux, http.MethodDelete, "/api/key1", "", "", http.StatusNoContent, "", contentTypeText)
 	// Verify key1 unset
-	requestAndCheckResponse(t, mux, http.MethodGet, "/api/key1", "", http.StatusNoContent, "", contentTypeText)
+	requestAndCheckResponse(t, mux, http.MethodGet, "/api/key1", "", "", http.StatusNoContent, "", contentTypeText)
 	// Verify key1 history
-	requestAndCheckResponse(t, mux, http.MethodGet, "/api/key1/history", "", http.StatusOK, `[{"event":"create","value":"value1"},{"event":"update","value":"value2"},{"event":"delete","value":""}]`, contentTypeJson)
+	requestAndCheckResponse(t, mux, http.MethodGet, "/api/key1/history", "", contentTypeText, http.StatusOK, `[{"event":"create","value":"value1"},{"event":"update","value":"value2"},{"event":"delete","value":""}]`, contentTypeJson)
 }
 
 func Test_CDCUH(t *testing.T) {
 	initialiseData(t, "{}")
 	mux := Mux()
 	// Set key1:value1
-	requestAndCheckResponse(t, mux, http.MethodPost, "/api/", `{"key1":"value1"}`, http.StatusCreated, "", contentTypeText)
+	requestAndCheckResponse(t, mux, http.MethodPost, "/api/", `{"key1":"value1"}`, contentTypeJson, http.StatusCreated, "", contentTypeText)
 	// Delete key1
-	requestAndCheckResponse(t, mux, http.MethodDelete, "/api/key1", "", http.StatusNoContent, "", contentTypeText)
+	requestAndCheckResponse(t, mux, http.MethodDelete, "/api/key1", "", "", http.StatusNoContent, "", contentTypeText)
 	// Set key1:value1
-	requestAndCheckResponse(t, mux, http.MethodPost, "/api/", `{"key1":"value1"}`, http.StatusCreated, "", contentTypeText)
+	requestAndCheckResponse(t, mux, http.MethodPost, "/api/", `{"key1":"value1"}`, contentTypeJson, http.StatusCreated, "", contentTypeText)
 	// Set key1:value2
-	requestAndCheckResponse(t, mux, http.MethodPut, "/api/key1", "value2", http.StatusNoContent, "", contentTypeText)
+	requestAndCheckResponse(t, mux, http.MethodPut, "/api/key1", "value2", "", http.StatusNoContent, "", contentTypeText)
 	// Verify key1 history
-	requestAndCheckResponse(t, mux, http.MethodGet, "/api/key1/history", "", http.StatusOK, `[{"event":"create","value":"value1"},{"event":"delete","value":""},{"event":"create","value":"value1"},{"event":"update","value":"value2"}]`, contentTypeJson)
+	requestAndCheckResponse(t, mux, http.MethodGet, "/api/key1/history", "", "", http.StatusOK, `[{"event":"create","value":"value1"},{"event":"delete","value":""},{"event":"create","value":"value1"},{"event":"update","value":"value2"}]`, contentTypeJson)
 }
 
 func Test_CRCRURDRHH(t *testing.T) {
 	initialiseData(t, "{}")
 	mux := Mux()
 	// Set key1:value1
-	requestAndCheckResponse(t, mux, http.MethodPost, "/api/", `{"key1":"value1"}`, http.StatusCreated, "", contentTypeText)
+	requestAndCheckResponse(t, mux, http.MethodPost, "/api/", `{"key1":"value1"}`, contentTypeJson, http.StatusCreated, "", contentTypeText)
 	// Verify key1:value1
-	requestAndCheckResponse(t, mux, http.MethodGet, "/api/key1", "", http.StatusOK, "value1", contentTypeText)
+	requestAndCheckResponse(t, mux, http.MethodGet, "/api/key1", "", "", http.StatusOK, "value1", contentTypeText)
 	// Set key2:value3
-	requestAndCheckResponse(t, mux, http.MethodPost, "/api/", `{"key2":"value3"}`, http.StatusCreated, "", contentTypeText)
+	requestAndCheckResponse(t, mux, http.MethodPost, "/api/", `{"key2":"value3"}`, contentTypeJson, http.StatusCreated, "", contentTypeText)
 	// Verify key2:value3
-	requestAndCheckResponse(t, mux, http.MethodGet, "/api/key2", "", http.StatusOK, "value3", contentTypeText)
+	requestAndCheckResponse(t, mux, http.MethodGet, "/api/key2", "", "", http.StatusOK, "value3", contentTypeText)
 	// Set key1:value2
-	requestAndCheckResponse(t, mux, http.MethodPut, "/api/key1", "value2", http.StatusNoContent, "", contentTypeText)
+	requestAndCheckResponse(t, mux, http.MethodPut, "/api/key1", "value2", contentTypeText, http.StatusNoContent, "", contentTypeText)
 	// Verify key1:value2
-	requestAndCheckResponse(t, mux, http.MethodGet, "/api/key1", "", http.StatusOK, "value2", contentTypeText)
+	requestAndCheckResponse(t, mux, http.MethodGet, "/api/key1", "", "", http.StatusOK, "value2", contentTypeText)
 	// Delete key2
-	requestAndCheckResponse(t, mux, http.MethodDelete, "/api/key2", "", http.StatusNoContent, "", contentTypeText)
+	requestAndCheckResponse(t, mux, http.MethodDelete, "/api/key2", "", "", http.StatusNoContent, "", contentTypeText)
 	// Verify key2 unset
-	requestAndCheckResponse(t, mux, http.MethodGet, "/api/key2", "", http.StatusNoContent, "", contentTypeText)
+	requestAndCheckResponse(t, mux, http.MethodGet, "/api/key2", "", "", http.StatusNoContent, "", contentTypeText)
 	// Verify key1 history
-	requestAndCheckResponse(t, mux, http.MethodGet, "/api/key1/history", "", http.StatusOK, `[{"event":"create","value":"value1"},{"event":"update","value":"value2"}]`, contentTypeJson)
+	requestAndCheckResponse(t, mux, http.MethodGet, "/api/key1/history", "", "", http.StatusOK, `[{"event":"create","value":"value1"},{"event":"update","value":"value2"}]`, contentTypeJson)
 	// Verify key2 history
-	requestAndCheckResponse(t, mux, http.MethodGet, "/api/key2/history", "", http.StatusOK, `[{"event":"create","value":"value3"},{"event":"delete","value":""}]`, contentTypeJson)
+	requestAndCheckResponse(t, mux, http.MethodGet, "/api/key2/history", "", "", http.StatusOK, `[{"event":"create","value":"value3"},{"event":"delete","value":""}]`, contentTypeJson)
 }
 
 // initialiseData sets the data file to the specified data to ensure a known testing state
@@ -306,7 +361,7 @@ func initialiseData(t *testing.T, data string) {
 }
 
 // requestAndCheckResponse makes the specified request to the specified mux and asserts the specified response code, body, and content type
-func requestAndCheckResponse(t *testing.T, mux *http.ServeMux, reqMethod, reqUrl, reqBody string, expRespCode int, expRespBody string, expRespContentType string) {
+func requestAndCheckResponse(t *testing.T, mux *http.ServeMux, reqMethod, reqUrl, reqBody, reqContentType string, expRespCode int, expRespBody string, expRespContentType string) {
 	var reqBodyBytes io.Reader
 	if reqBody != "" {
 		reqBodyBytes = bytes.NewReader([]byte(reqBody))
@@ -315,6 +370,7 @@ func requestAndCheckResponse(t *testing.T, mux *http.ServeMux, reqMethod, reqUrl
 	if err != nil {
 		assert.Fail(t, err.Error())
 	}
+	req.Header.Add(contentType, reqContentType)
 
 	resp := httptest.NewRecorder()
 	mux.ServeHTTP(resp, req)
