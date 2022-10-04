@@ -13,11 +13,15 @@ import (
 const (
 	dataFilePath = "data.json"
 
+	contentType     = "Content-Type"
+	contentTypeText = "text/plain"
+	contentTypeJson = "application/json"
+
 	ErrorUnexpected      = "Unexpected error:"
 	ErrorKeyDeleted      = "Error: the specified key has been deleted"
 	ErrorKeyExists       = "Error: the specified key already exists"
-	ErrorInvalidPutBody  = "Error: request body must be a single value"
-	ErrorInvalidPostBody = "Error: request body must be of the form {\"key\":\"value\"}"
+	ErrorInvalidPutBody  = "Error: request body must be a single value with Content-Type text/plain"
+	ErrorInvalidPostBody = "Error: request body must be of the form {\"key\":\"value\"} with Content-Type application/json"
 )
 
 type eventObj struct {
@@ -53,6 +57,7 @@ func Mux() *http.ServeMux {
 				// Get value for key
 
 				respBody, respCode := handleReadReq(r, urlParts[1])
+				w.Header().Add(contentType, contentTypeText)
 				w.WriteHeader(respCode)
 				fmt.Fprint(w, respBody)
 				return
@@ -60,6 +65,7 @@ func Mux() *http.ServeMux {
 				// Update key:value
 
 				respBody, respCode := handleUpdateReq(r, urlParts[1])
+				w.Header().Add(contentType, contentTypeText)
 				w.WriteHeader(respCode)
 				fmt.Fprint(w, respBody)
 				return
@@ -67,6 +73,7 @@ func Mux() *http.ServeMux {
 				// Delete value for key
 
 				respBody, respCode := handleDeleteReq(r, urlParts[1])
+				w.Header().Add(contentType, contentTypeText)
 				w.WriteHeader(respCode)
 				fmt.Fprint(w, respBody)
 				return
@@ -83,6 +90,7 @@ func Mux() *http.ServeMux {
 			}
 
 			respBody, respCode := handleHistoryReq(r, urlParts[1])
+			w.Header().Add(contentType, contentTypeJson)
 			w.WriteHeader(respCode)
 			fmt.Fprint(w, respBody)
 			return
@@ -104,6 +112,7 @@ func handlePostFunc(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respBody, respCode := handleCreateReq(r)
+	w.Header().Add(contentType, contentTypeText)
 	w.WriteHeader(respCode)
 	fmt.Fprint(w, respBody)
 }
@@ -147,6 +156,10 @@ func handleDeleteReq(r *http.Request, key string) (string, int) {
 
 // handleUpdateReq handles a put/patch request and returns the desired response body and code
 func handleUpdateReq(r *http.Request, key string) (string, int) {
+	if r.Header.Get(contentType) != contentTypeText {
+		return ErrorInvalidPutBody, http.StatusUnsupportedMediaType
+	}
+
 	// Parse request body
 	body, err := body(r)
 	if body == nil {
@@ -195,6 +208,10 @@ func handleUpdateReq(r *http.Request, key string) (string, int) {
 
 // handleCreateReq handles a post request and returns the desired response body and code
 func handleCreateReq(r *http.Request) (string, int) {
+	if r.Header.Get(contentType) != contentTypeJson {
+		return ErrorInvalidPostBody, http.StatusUnsupportedMediaType
+	}
+
 	// Parse request body
 	body, err := body(r)
 	if body == nil {
