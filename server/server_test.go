@@ -1,15 +1,17 @@
-package main
+package server
 
 import (
 	"bytes"
 	"io"
-	"its-dave/simple-crud-rest-server/repo"
+	"its-dave/simple-crud-rest-server/repository"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
+
+const testDataFilePath = "testdata.json"
 
 func TestMain(t *testing.T) {
 	initialState := `{
@@ -288,15 +290,21 @@ func TestMain(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			initialiseData(t, initialState)
-			requestAndCheckResponse(t, Mux(), tc.method, tc.url, tc.reqBody, tc.reqContentType, tc.expResponseCode, tc.expResponseBody, tc.expContentType)
+			repo := repository.Repo{}
+			repo.SetDataFilePath(testDataFilePath)
+			initialiseData(t, repo, initialState)
+
+			requestAndCheckResponse(t, Create(repo), tc.method, tc.url, tc.reqBody, tc.reqContentType, tc.expResponseCode, tc.expResponseBody, tc.expContentType)
 		})
 	}
 }
 
 func Test_CRURDRH(t *testing.T) {
-	initialiseData(t, "{}")
-	mux := Mux()
+	repo := repository.Repo{}
+	repo.SetDataFilePath(testDataFilePath)
+	initialiseData(t, repo, "{}")
+	mux := Create(repo)
+
 	// Set key1:value1
 	requestAndCheckResponse(t, mux, http.MethodPost, "/api/", `{"key1":"value1"}`, contentTypeJson, http.StatusCreated, "", contentTypeText)
 	// Verify key1:value1
@@ -314,8 +322,11 @@ func Test_CRURDRH(t *testing.T) {
 }
 
 func Test_CDCUH(t *testing.T) {
-	initialiseData(t, "{}")
-	mux := Mux()
+	repo := repository.Repo{}
+	repo.SetDataFilePath(testDataFilePath)
+	initialiseData(t, repo, "{}")
+	mux := Create(repo)
+
 	// Set key1:value1
 	requestAndCheckResponse(t, mux, http.MethodPost, "/api/", `{"key1":"value1"}`, contentTypeJson, http.StatusCreated, "", contentTypeText)
 	// Delete key1
@@ -329,8 +340,11 @@ func Test_CDCUH(t *testing.T) {
 }
 
 func Test_CRCRURDRHH(t *testing.T) {
-	initialiseData(t, "{}")
-	mux := Mux()
+	repo := repository.Repo{}
+	repo.SetDataFilePath(testDataFilePath)
+	initialiseData(t, repo, "{}")
+	mux := Create(repo)
+
 	// Set key1:value1
 	requestAndCheckResponse(t, mux, http.MethodPost, "/api/", `{"key1":"value1"}`, contentTypeJson, http.StatusCreated, "", contentTypeText)
 	// Verify key1:value1
@@ -354,7 +368,7 @@ func Test_CRCRURDRHH(t *testing.T) {
 }
 
 // initialiseData sets the data file to the specified data to ensure a known testing state
-func initialiseData(t *testing.T, data string) {
+func initialiseData(t *testing.T, repo repository.Repo, data string) {
 	if err := repo.WriteToDataFile([]byte(data)); err != nil {
 		assert.Fail(t, err.Error())
 	}
