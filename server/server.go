@@ -15,11 +15,11 @@ const (
 	contentTypeText = "text/plain"
 	contentTypeJson = "application/json"
 
-	ErrorUnexpected      = "Unexpected error:"
-	ErrorKeyDeleted      = "Error: the specified key has been deleted"
-	ErrorKeyExists       = "Error: the specified key already exists"
-	ErrorInvalidPutBody  = "Error: request body must be a single value with Content-Type text/plain"
-	ErrorInvalidPostBody = "Error: request body must be of the form {\"key\":\"value\"} with Content-Type application/json"
+	errorUnexpected      = "Unexpected error:"
+	errorKeyDeleted      = "Error: the specified key has been deleted"
+	errorKeyExists       = "Error: the specified key already exists"
+	errorInvalidPutBody  = "Error: request body must be a single value with Content-Type text/plain"
+	errorInvalidPostBody = "Error: request body must be of the form {\"key\":\"value\"} with Content-Type application/json"
 )
 
 type eventObj struct {
@@ -112,7 +112,7 @@ func Create(repo repository.Repo) *http.ServeMux {
 func handleDeleteReq(repo repository.Repo, r *http.Request, key string) (string, int) {
 	dataMap, err := repo.ReadData()
 	if err != nil {
-		return fmt.Sprint(ErrorUnexpected, err.Error()), http.StatusInternalServerError
+		return fmt.Sprint(errorUnexpected, err.Error()), http.StatusInternalServerError
 	}
 	keyArray, exists := dataMap[key]
 	if !exists {
@@ -122,15 +122,15 @@ func handleDeleteReq(repo repository.Repo, r *http.Request, key string) (string,
 
 	array, err := sliceFromArray(keyArray)
 	if err != nil {
-		return fmt.Sprint(ErrorUnexpected, err.Error()), http.StatusInternalServerError
+		return fmt.Sprint(errorUnexpected, err.Error()), http.StatusInternalServerError
 	}
 	latestEventObj, err := latestEventFromSlice(array)
 	if err != nil {
-		return fmt.Sprint(ErrorUnexpected, err.Error()), http.StatusInternalServerError
+		return fmt.Sprint(errorUnexpected, err.Error()), http.StatusInternalServerError
 	}
 
 	if latestEventObj.Value == "" {
-		return ErrorKeyDeleted, http.StatusBadRequest
+		return errorKeyDeleted, http.StatusBadRequest
 	}
 
 	// Set new key:value
@@ -140,7 +140,7 @@ func handleDeleteReq(repo repository.Repo, r *http.Request, key string) (string,
 
 	err = repo.WriteData(dataMap)
 	if err != nil {
-		return fmt.Sprint(ErrorUnexpected, err.Error()), http.StatusInternalServerError
+		return fmt.Sprint(errorUnexpected, err.Error()), http.StatusInternalServerError
 	}
 	return "", http.StatusNoContent
 }
@@ -148,22 +148,22 @@ func handleDeleteReq(repo repository.Repo, r *http.Request, key string) (string,
 // handleUpdateReq handles a put/patch request and returns the desired response body and code
 func handleUpdateReq(repo repository.Repo, r *http.Request, key string) (string, int) {
 	if r.Header.Get(contentType) != contentTypeText {
-		return ErrorInvalidPutBody, http.StatusUnsupportedMediaType
+		return errorInvalidPutBody, http.StatusUnsupportedMediaType
 	}
 
 	// Parse request body
 	body, err := body(r)
 	if body == nil {
-		return ErrorInvalidPutBody, http.StatusBadRequest
+		return errorInvalidPutBody, http.StatusBadRequest
 	}
 	if err != nil {
-		return fmt.Sprint(ErrorUnexpected, err.Error()), http.StatusInternalServerError
+		return fmt.Sprint(errorUnexpected, err.Error()), http.StatusInternalServerError
 	}
 	value := string(body)
 
 	dataMap, err := repo.ReadData()
 	if err != nil {
-		return fmt.Sprint(ErrorUnexpected, err.Error()), http.StatusInternalServerError
+		return fmt.Sprint(errorUnexpected, err.Error()), http.StatusInternalServerError
 	}
 	keyArray, exists := dataMap[key]
 	if !exists {
@@ -173,15 +173,15 @@ func handleUpdateReq(repo repository.Repo, r *http.Request, key string) (string,
 
 	array, err := sliceFromArray(keyArray)
 	if err != nil {
-		return fmt.Sprint(ErrorUnexpected, err.Error()), http.StatusInternalServerError
+		return fmt.Sprint(errorUnexpected, err.Error()), http.StatusInternalServerError
 	}
 	latestEventObj, err := latestEventFromSlice(array)
 	if err != nil {
-		return fmt.Sprint(ErrorUnexpected, err.Error()), http.StatusInternalServerError
+		return fmt.Sprint(errorUnexpected, err.Error()), http.StatusInternalServerError
 	}
 
 	if latestEventObj.Value == "" {
-		return ErrorKeyDeleted, http.StatusBadRequest
+		return errorKeyDeleted, http.StatusBadRequest
 	}
 
 	// Set new key:value
@@ -192,7 +192,7 @@ func handleUpdateReq(repo repository.Repo, r *http.Request, key string) (string,
 
 	err = repo.WriteData(dataMap)
 	if err != nil {
-		return fmt.Sprint(ErrorUnexpected, err.Error()), http.StatusInternalServerError
+		return fmt.Sprint(errorUnexpected, err.Error()), http.StatusInternalServerError
 	}
 	return "", http.StatusNoContent
 }
@@ -200,35 +200,35 @@ func handleUpdateReq(repo repository.Repo, r *http.Request, key string) (string,
 // handleCreateReq handles a post request and returns the desired response body and code
 func handleCreateReq(repo repository.Repo, r *http.Request) (string, int) {
 	if r.Header.Get(contentType) != contentTypeJson {
-		return ErrorInvalidPostBody, http.StatusUnsupportedMediaType
+		return errorInvalidPostBody, http.StatusUnsupportedMediaType
 	}
 
 	// Parse request body
 	body, err := body(r)
 	if body == nil {
-		return ErrorInvalidPostBody, http.StatusBadRequest
+		return errorInvalidPostBody, http.StatusBadRequest
 	}
 	if err != nil {
-		return fmt.Sprint(ErrorUnexpected, err.Error()), http.StatusInternalServerError
+		return fmt.Sprint(errorUnexpected, err.Error()), http.StatusInternalServerError
 	}
 	var bodyJson interface{}
 	if err = json.Unmarshal(body, &bodyJson); err != nil {
-		return ErrorInvalidPostBody, http.StatusBadRequest
+		return errorInvalidPostBody, http.StatusBadRequest
 	}
 	bodyMap := bodyJson.(map[string]interface{})
 	if len(bodyMap) != 1 {
-		return ErrorInvalidPostBody, http.StatusBadRequest
+		return errorInvalidPostBody, http.StatusBadRequest
 	}
 
 	dataMap, err := repo.ReadData()
 	if err != nil {
-		return fmt.Sprint(ErrorUnexpected, err.Error()), http.StatusInternalServerError
+		return fmt.Sprint(errorUnexpected, err.Error()), http.StatusInternalServerError
 	}
 
 	for key, valueInterface := range bodyMap {
 		value, ok := valueInterface.(string)
 		if !ok {
-			return ErrorInvalidPostBody, http.StatusBadRequest
+			return errorInvalidPostBody, http.StatusBadRequest
 		}
 		event := eventObj{
 			Event: "create",
@@ -244,15 +244,15 @@ func handleCreateReq(repo repository.Repo, r *http.Request) (string, int) {
 
 		array, err := sliceFromArray(keyArray)
 		if err != nil {
-			return fmt.Sprint(ErrorUnexpected, err.Error()), http.StatusInternalServerError
+			return fmt.Sprint(errorUnexpected, err.Error()), http.StatusInternalServerError
 		}
 		latestEventObj, err := latestEventFromSlice(array)
 		if err != nil {
-			return fmt.Sprint(ErrorUnexpected, err.Error()), http.StatusInternalServerError
+			return fmt.Sprint(errorUnexpected, err.Error()), http.StatusInternalServerError
 		}
 
 		if latestEventObj.Value != "" {
-			return ErrorKeyExists, http.StatusBadRequest
+			return errorKeyExists, http.StatusBadRequest
 		}
 
 		// Set new key:value
@@ -270,7 +270,7 @@ func handleCreateReq(repo repository.Repo, r *http.Request) (string, int) {
 func handleReadReq(repo repository.Repo, r *http.Request, key string) (string, int) {
 	dataMap, err := repo.ReadData()
 	if err != nil {
-		return fmt.Sprint(ErrorUnexpected, err.Error()), http.StatusInternalServerError
+		return fmt.Sprint(errorUnexpected, err.Error()), http.StatusInternalServerError
 	}
 	keyArray, exists := dataMap[key]
 	if !exists {
@@ -280,11 +280,11 @@ func handleReadReq(repo repository.Repo, r *http.Request, key string) (string, i
 
 	array, err := sliceFromArray(keyArray)
 	if err != nil {
-		return fmt.Sprint(ErrorUnexpected, err.Error()), http.StatusInternalServerError
+		return fmt.Sprint(errorUnexpected, err.Error()), http.StatusInternalServerError
 	}
 	latestEventObj, err := latestEventFromSlice(array)
 	if err != nil {
-		return fmt.Sprint(ErrorUnexpected, err.Error()), http.StatusInternalServerError
+		return fmt.Sprint(errorUnexpected, err.Error()), http.StatusInternalServerError
 	}
 
 	// Key has been deleted
@@ -299,7 +299,7 @@ func handleReadReq(repo repository.Repo, r *http.Request, key string) (string, i
 func handleHistoryReq(repo repository.Repo, r *http.Request, key string) (string, int) {
 	dataMap, err := repo.ReadData()
 	if err != nil {
-		return fmt.Sprint(ErrorUnexpected, err.Error()), http.StatusInternalServerError
+		return fmt.Sprint(errorUnexpected, err.Error()), http.StatusInternalServerError
 	}
 	keyArray, exists := dataMap[key]
 	if !exists {
@@ -309,7 +309,7 @@ func handleHistoryReq(repo repository.Repo, r *http.Request, key string) (string
 
 	array, err := json.Marshal(keyArray)
 	if err != nil {
-		return fmt.Sprint(ErrorUnexpected, err.Error()), http.StatusInternalServerError
+		return fmt.Sprint(errorUnexpected, err.Error()), http.StatusInternalServerError
 	}
 
 	return string(array), http.StatusOK

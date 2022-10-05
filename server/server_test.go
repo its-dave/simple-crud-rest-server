@@ -124,7 +124,7 @@ func TestMain(t *testing.T) {
 			reqBody:         `{"key1":"value1"}`,
 			reqContentType:  contentTypeJson,
 			expResponseCode: http.StatusBadRequest,
-			expResponseBody: ErrorKeyExists,
+			expResponseBody: errorKeyExists,
 			expContentType:  contentTypeText,
 		},
 		{
@@ -134,7 +134,7 @@ func TestMain(t *testing.T) {
 			reqBody:         `{"key1":"value1"}`,
 			reqContentType:  contentTypeJson,
 			expResponseCode: http.StatusBadRequest,
-			expResponseBody: ErrorKeyExists,
+			expResponseBody: errorKeyExists,
 			expContentType:  contentTypeText,
 		},
 		{
@@ -170,7 +170,7 @@ func TestMain(t *testing.T) {
 			reqBody:         "key3",
 			reqContentType:  contentTypeJson,
 			expResponseCode: http.StatusBadRequest,
-			expResponseBody: ErrorInvalidPostBody,
+			expResponseBody: errorInvalidPostBody,
 			expContentType:  contentTypeText,
 		},
 		{
@@ -180,7 +180,7 @@ func TestMain(t *testing.T) {
 			reqBody:         `{"key3":"value3"}`,
 			reqContentType:  contentTypeText,
 			expResponseCode: http.StatusUnsupportedMediaType,
-			expResponseBody: ErrorInvalidPostBody,
+			expResponseBody: errorInvalidPostBody,
 			expContentType:  contentTypeText,
 		},
 		{
@@ -190,7 +190,7 @@ func TestMain(t *testing.T) {
 			reqBody:         "key3",
 			reqContentType:  contentTypeText,
 			expResponseCode: http.StatusUnsupportedMediaType,
-			expResponseBody: ErrorInvalidPostBody,
+			expResponseBody: errorInvalidPostBody,
 			expContentType:  contentTypeText,
 		},
 		{
@@ -209,7 +209,7 @@ func TestMain(t *testing.T) {
 			reqBody:         "value4",
 			reqContentType:  contentTypeText,
 			expResponseCode: http.StatusBadRequest,
-			expResponseBody: ErrorKeyDeleted,
+			expResponseBody: errorKeyDeleted,
 			expContentType:  contentTypeText,
 		},
 		{
@@ -236,7 +236,7 @@ func TestMain(t *testing.T) {
 			reqBody:         "",
 			reqContentType:  contentTypeText,
 			expResponseCode: http.StatusBadRequest,
-			expResponseBody: ErrorInvalidPutBody,
+			expResponseBody: errorInvalidPutBody,
 			expContentType:  contentTypeText,
 		},
 		{
@@ -246,7 +246,7 @@ func TestMain(t *testing.T) {
 			reqBody:         "value4",
 			reqContentType:  contentTypeJson,
 			expResponseCode: http.StatusUnsupportedMediaType,
-			expResponseBody: ErrorInvalidPutBody,
+			expResponseBody: errorInvalidPutBody,
 			expContentType:  contentTypeText,
 		},
 		{
@@ -256,7 +256,7 @@ func TestMain(t *testing.T) {
 			reqBody:         "",
 			reqContentType:  contentTypeJson,
 			expResponseCode: http.StatusUnsupportedMediaType,
-			expResponseBody: ErrorInvalidPutBody,
+			expResponseBody: errorInvalidPutBody,
 			expContentType:  contentTypeText,
 		},
 		{
@@ -271,7 +271,7 @@ func TestMain(t *testing.T) {
 			url:             "/api/key2",
 			method:          http.MethodDelete,
 			expResponseCode: http.StatusBadRequest,
-			expResponseBody: ErrorKeyDeleted,
+			expResponseBody: errorKeyDeleted,
 			expContentType:  contentTypeText,
 		},
 		{
