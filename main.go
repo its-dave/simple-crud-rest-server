@@ -5,14 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"its-dave/simple-crud-rest-server/repo"
 	"net/http"
-	"os"
 	"strings"
 )
 
 const (
-	dataFilePath = "data.json"
-
 	contentType     = "Content-Type"
 	contentTypeText = "text/plain"
 	contentTypeJson = "application/json"
@@ -31,13 +29,7 @@ type eventObj struct {
 
 // Mux creates a simple rest server using an existing data file if found
 func Mux() *http.ServeMux {
-	// Ensure data file exists
-	_, err := os.Stat(dataFilePath)
-	if errors.Is(err, os.ErrNotExist) {
-		if err := os.WriteFile(dataFilePath, []byte("{}"), 0666); err != nil {
-			panic(err)
-		}
-	} else if err != nil {
+	if err := repo.InitialiseData(); err != nil {
 		panic(err)
 	}
 
@@ -119,7 +111,7 @@ func handlePostFunc(w http.ResponseWriter, r *http.Request) {
 
 // handleDeleteReq handles a delete request and returns the desired response body and code
 func handleDeleteReq(r *http.Request, key string) (string, int) {
-	dataMap, err := storedData()
+	dataMap, err := repo.ReadData()
 	if err != nil {
 		return fmt.Sprint(ErrorUnexpected, err.Error()), http.StatusInternalServerError
 	}
@@ -147,7 +139,7 @@ func handleDeleteReq(r *http.Request, key string) (string, int) {
 		Event: "delete",
 	})
 
-	err = writeData(dataMap)
+	err = repo.WriteData(dataMap)
 	if err != nil {
 		return fmt.Sprint(ErrorUnexpected, err.Error()), http.StatusInternalServerError
 	}
@@ -170,7 +162,7 @@ func handleUpdateReq(r *http.Request, key string) (string, int) {
 	}
 	value := string(body)
 
-	dataMap, err := storedData()
+	dataMap, err := repo.ReadData()
 	if err != nil {
 		return fmt.Sprint(ErrorUnexpected, err.Error()), http.StatusInternalServerError
 	}
@@ -199,7 +191,7 @@ func handleUpdateReq(r *http.Request, key string) (string, int) {
 		Value: value,
 	})
 
-	err = writeData(dataMap)
+	err = repo.WriteData(dataMap)
 	if err != nil {
 		return fmt.Sprint(ErrorUnexpected, err.Error()), http.StatusInternalServerError
 	}
@@ -229,7 +221,7 @@ func handleCreateReq(r *http.Request) (string, int) {
 		return ErrorInvalidPostBody, http.StatusBadRequest
 	}
 
-	dataMap, err := storedData()
+	dataMap, err := repo.ReadData()
 	if err != nil {
 		return fmt.Sprint(ErrorUnexpected, err.Error()), http.StatusInternalServerError
 	}
@@ -268,7 +260,7 @@ func handleCreateReq(r *http.Request) (string, int) {
 		dataMap[key] = append(array, event)
 	}
 
-	err = writeData(dataMap)
+	err = repo.WriteData(dataMap)
 	if err != nil {
 		return err.Error(), http.StatusInternalServerError
 	}
@@ -277,7 +269,7 @@ func handleCreateReq(r *http.Request) (string, int) {
 
 // handleReadReq handles a get request and returns the desired response body and code
 func handleReadReq(r *http.Request, key string) (string, int) {
-	dataMap, err := storedData()
+	dataMap, err := repo.ReadData()
 	if err != nil {
 		return fmt.Sprint(ErrorUnexpected, err.Error()), http.StatusInternalServerError
 	}
@@ -306,7 +298,7 @@ func handleReadReq(r *http.Request, key string) (string, int) {
 
 // handleHistoryReq handles a get history request and returns the desired response body and code
 func handleHistoryReq(r *http.Request, key string) (string, int) {
-	dataMap, err := storedData()
+	dataMap, err := repo.ReadData()
 	if err != nil {
 		return fmt.Sprint(ErrorUnexpected, err.Error()), http.StatusInternalServerError
 	}
@@ -322,21 +314,6 @@ func handleHistoryReq(r *http.Request, key string) (string, int) {
 	}
 
 	return string(array), http.StatusOK
-}
-
-// storedData parses the stored JSON data and returns it as a map
-func storedData() (map[string]interface{}, error) {
-	// Parse stored data
-	data, err := os.ReadFile(dataFilePath)
-	if err != nil {
-		return nil, err
-	}
-	var jsonData interface{}
-	err = json.Unmarshal(data, &jsonData)
-	if err != nil {
-		return nil, err
-	}
-	return jsonData.(map[string]interface{}), nil
 }
 
 // sliceFromArray parses the specified data for a specific key and returns it as a slice
@@ -358,18 +335,6 @@ func latestEventFromSlice(array []interface{}) (eventObj, error) {
 		return latestEventObj, err
 	}
 	return latestEventObj, nil
-}
-
-// writeData saves the specified JSON data to the data file
-func writeData(dataMap map[string]interface{}) error {
-	dataToWrite, err := json.Marshal(dataMap)
-	if err != nil {
-		return err
-	}
-	if err := os.WriteFile(dataFilePath, dataToWrite, 0666); err != nil {
-		return err
-	}
-	return nil
 }
 
 // body gets the body data from the specified request
