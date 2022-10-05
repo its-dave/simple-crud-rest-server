@@ -6,12 +6,12 @@ import (
 	"os"
 )
 
-const DataFilePath = "data.json"
+const dataFilePath = "data.json"
 
 // ReadData parses the stored JSON data and returns it as a map
 func ReadData() (map[string]interface{}, error) {
 	// Parse stored data
-	data, err := os.ReadFile(DataFilePath)
+	data, err := os.ReadFile(dataFilePath)
 	if err != nil {
 		return nil, err
 	}
@@ -29,17 +29,21 @@ func WriteData(dataMap map[string]interface{}) error {
 	if err != nil {
 		return err
 	}
-	if err := os.WriteFile(DataFilePath, dataToWrite, 0666); err != nil {
+	if err := WriteToDataFile(dataToWrite); err != nil {
 		return err
 	}
 	return nil
 }
 
-// InitialiseData ensures that the data file exists
+// InitialiseData ensures that the data file exists, creating an empty JSON object if not
 func InitialiseData() error {
-	_, err := os.Stat(DataFilePath)
+	_, err := os.Stat(dataFilePath)
 	if errors.Is(err, os.ErrNotExist) {
-		return os.WriteFile(DataFilePath, []byte("{}"), 0666)
+		WriteToDataFile([]byte("{}"))
 	}
 	return err
+}
+
+func WriteToDataFile(bytes []byte) error {
+	return os.WriteFile(dataFilePath, bytes, 0666)
 }

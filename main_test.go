@@ -6,7 +6,6 @@ import (
 	"its-dave/simple-crud-rest-server/repo"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -356,7 +355,7 @@ func Test_CRCRURDRHH(t *testing.T) {
 
 // initialiseData sets the data file to the specified data to ensure a known testing state
 func initialiseData(t *testing.T, data string) {
-	if err := os.WriteFile(repo.DataFilePath, []byte(data), 0666); err != nil {
+	if err := repo.WriteToDataFile([]byte(data)); err != nil {
 		assert.Fail(t, err.Error())
 	}
 }
