@@ -6,6 +6,7 @@ import (
 	"its-dave/simple-crud-rest-server/repository"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -290,9 +291,7 @@ func TestMain(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			repo := repository.Repo{}
-			repo.SetDataFilePath(testDataFilePath)
-			initialiseData(t, repo, initialState)
+			repo := initialiseData(t, initialState)
 
 			requestAndCheckResponse(t, Create(repo), tc.method, tc.url, tc.reqBody, tc.reqContentType, tc.expResponseCode, tc.expResponseBody, tc.expContentType)
 		})
@@ -300,9 +299,7 @@ func TestMain(t *testing.T) {
 }
 
 func Test_CRURDRH(t *testing.T) {
-	repo := repository.Repo{}
-	repo.SetDataFilePath(testDataFilePath)
-	initialiseData(t, repo, "{}")
+	repo := initialiseData(t, "{}")
 	mux := Create(repo)
 
 	// Set key1:value1
@@ -322,9 +319,7 @@ func Test_CRURDRH(t *testing.T) {
 }
 
 func Test_CDCUH(t *testing.T) {
-	repo := repository.Repo{}
-	repo.SetDataFilePath(testDataFilePath)
-	initialiseData(t, repo, "{}")
+	repo := initialiseData(t, "{}")
 	mux := Create(repo)
 
 	// Set key1:value1
@@ -340,9 +335,7 @@ func Test_CDCUH(t *testing.T) {
 }
 
 func Test_CRCRURDRHH(t *testing.T) {
-	repo := repository.Repo{}
-	repo.SetDataFilePath(testDataFilePath)
-	initialiseData(t, repo, "{}")
+	repo := initialiseData(t, "{}")
 	mux := Create(repo)
 
 	// Set key1:value1
@@ -367,11 +360,15 @@ func Test_CRCRURDRHH(t *testing.T) {
 	requestAndCheckResponse(t, mux, http.MethodGet, "/api/key2/history", "", "", http.StatusOK, `[{"event":"create","value":"value3"},{"event":"delete","value":""}]`, contentTypeJson)
 }
 
-// initialiseData sets the data file to the specified data to ensure a known testing state
-func initialiseData(t *testing.T, repo repository.Repo, data string) {
-	if err := repo.WriteToDataFile([]byte(data)); err != nil {
+// initialiseData sets the data file to the specified data to ensure a known testing state, then returns a new Repo pointing to that file
+func initialiseData(t *testing.T, data string) repository.Repo {
+	if err := os.WriteFile(testDataFilePath, []byte(data), 0666); err != nil {
 		assert.Fail(t, err.Error())
 	}
+
+	repo := repository.Repo{}
+	repo.SetDataFilePath(testDataFilePath)
+	return repo
 }
 
 // requestAndCheckResponse makes the specified request to the specified mux and asserts the specified response code, body, and content type

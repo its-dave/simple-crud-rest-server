@@ -35,7 +35,7 @@ func (repo Repo) WriteData(dataMap map[string]interface{}) error {
 	if err != nil {
 		return err
 	}
-	if err := repo.WriteToDataFile(dataToWrite); err != nil {
+	if err := repo.writeToDataFile(dataToWrite); err != nil {
 		return err
 	}
 	return nil
@@ -45,11 +45,12 @@ func (repo Repo) WriteData(dataMap map[string]interface{}) error {
 func (repo Repo) InitialiseData() error {
 	_, err := os.Stat(repo.dataFilePath)
 	if errors.Is(err, os.ErrNotExist) {
-		repo.WriteToDataFile([]byte("{}"))
+		repo.writeToDataFile([]byte("{}"))
 	}
 	return err
 }
 
-func (repo Repo) WriteToDataFile(bytes []byte) error {
+// writeToDataFile overwrites the file at dataFilePath with the specified bytes
+func (repo Repo) writeToDataFile(bytes []byte) error {
 	return os.WriteFile(repo.dataFilePath, bytes, 0666)
 }
