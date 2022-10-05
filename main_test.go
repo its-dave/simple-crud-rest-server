@@ -323,7 +323,7 @@ func Test_CDCUH(t *testing.T) {
 	// Set key1:value1
 	requestAndCheckResponse(t, mux, http.MethodPost, "/api/", `{"key1":"value1"}`, contentTypeJson, http.StatusCreated, "", contentTypeText)
 	// Set key1:value2
-	requestAndCheckResponse(t, mux, http.MethodPut, "/api/key1", "value2", "", http.StatusNoContent, "", contentTypeText)
+	requestAndCheckResponse(t, mux, http.MethodPut, "/api/key1", "value2", contentTypeText, http.StatusNoContent, "", contentTypeText)
 	// Verify key1 history
 	requestAndCheckResponse(t, mux, http.MethodGet, "/api/key1/history", "", "", http.StatusOK, `[{"event":"create","value":"value1"},{"event":"delete","value":""},{"event":"create","value":"value1"},{"event":"update","value":"value2"}]`, contentTypeJson)
 }
