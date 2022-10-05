@@ -21,7 +21,6 @@ Written in Go using minimal third-party libraries
 ### Nuances
 
 - The server will save the stored data in a simple JSON file - this will be created if it does not already exist and persists when the server is stopped
-    - Warning: running the unit tests will overwrite any saved state
 - `DELETE` requests delete the value not the key - this can be seen by then getting the history
     - You must call `POST` to create a new value or `PUT` to update a non-deleted value
     - Technically you could use a `PUT` request to set a value to be an empty string which would functionally be the same as a `DELETE` request

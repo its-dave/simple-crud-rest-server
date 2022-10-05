@@ -1,8 +1,9 @@
-package main
+package server
 
 import (
 	"bytes"
 	"io"
+	"its-dave/simple-crud-rest-server/repository"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -10,6 +11,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 )
+
+const testDataFilePath = "testdata.json"
 
 func TestMain(t *testing.T) {
 	initialState := `{
@@ -121,7 +124,7 @@ func TestMain(t *testing.T) {
 			reqBody:         `{"key1":"value1"}`,
 			reqContentType:  contentTypeJson,
 			expResponseCode: http.StatusBadRequest,
-			expResponseBody: ErrorKeyExists,
+			expResponseBody: errorKeyExists,
 			expContentType:  contentTypeText,
 		},
 		{
@@ -131,7 +134,7 @@ func TestMain(t *testing.T) {
 			reqBody:         `{"key1":"value1"}`,
 			reqContentType:  contentTypeJson,
 			expResponseCode: http.StatusBadRequest,
-			expResponseBody: ErrorKeyExists,
+			expResponseBody: errorKeyExists,
 			expContentType:  contentTypeText,
 		},
 		{
@@ -167,7 +170,7 @@ func TestMain(t *testing.T) {
 			reqBody:         "key3",
 			reqContentType:  contentTypeJson,
 			expResponseCode: http.StatusBadRequest,
-			expResponseBody: ErrorInvalidPostBody,
+			expResponseBody: errorInvalidPostBody,
 			expContentType:  contentTypeText,
 		},
 		{
@@ -177,7 +180,7 @@ func TestMain(t *testing.T) {
 			reqBody:         `{"key3":"value3"}`,
 			reqContentType:  contentTypeText,
 			expResponseCode: http.StatusUnsupportedMediaType,
-			expResponseBody: ErrorInvalidPostBody,
+			expResponseBody: errorInvalidPostBody,
 			expContentType:  contentTypeText,
 		},
 		{
@@ -187,7 +190,7 @@ func TestMain(t *testing.T) {
 			reqBody:         "key3",
 			reqContentType:  contentTypeText,
 			expResponseCode: http.StatusUnsupportedMediaType,
-			expResponseBody: ErrorInvalidPostBody,
+			expResponseBody: errorInvalidPostBody,
 			expContentType:  contentTypeText,
 		},
 		{
@@ -206,7 +209,7 @@ func TestMain(t *testing.T) {
 			reqBody:         "value4",
 			reqContentType:  contentTypeText,
 			expResponseCode: http.StatusBadRequest,
-			expResponseBody: ErrorKeyDeleted,
+			expResponseBody: errorKeyDeleted,
 			expContentType:  contentTypeText,
 		},
 		{
@@ -233,7 +236,7 @@ func TestMain(t *testing.T) {
 			reqBody:         "",
 			reqContentType:  contentTypeText,
 			expResponseCode: http.StatusBadRequest,
-			expResponseBody: ErrorInvalidPutBody,
+			expResponseBody: errorInvalidPutBody,
 			expContentType:  contentTypeText,
 		},
 		{
@@ -243,7 +246,7 @@ func TestMain(t *testing.T) {
 			reqBody:         "value4",
 			reqContentType:  contentTypeJson,
 			expResponseCode: http.StatusUnsupportedMediaType,
-			expResponseBody: ErrorInvalidPutBody,
+			expResponseBody: errorInvalidPutBody,
 			expContentType:  contentTypeText,
 		},
 		{
@@ -253,7 +256,7 @@ func TestMain(t *testing.T) {
 			reqBody:         "",
 			reqContentType:  contentTypeJson,
 			expResponseCode: http.StatusUnsupportedMediaType,
-			expResponseBody: ErrorInvalidPutBody,
+			expResponseBody: errorInvalidPutBody,
 			expContentType:  contentTypeText,
 		},
 		{
@@ -268,7 +271,7 @@ func TestMain(t *testing.T) {
 			url:             "/api/key2",
 			method:          http.MethodDelete,
 			expResponseCode: http.StatusBadRequest,
-			expResponseBody: ErrorKeyDeleted,
+			expResponseBody: errorKeyDeleted,
 			expContentType:  contentTypeText,
 		},
 		{
@@ -288,15 +291,17 @@ func TestMain(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			initialiseData(t, initialState)
-			requestAndCheckResponse(t, Mux(), tc.method, tc.url, tc.reqBody, tc.reqContentType, tc.expResponseCode, tc.expResponseBody, tc.expContentType)
+			repo := initialiseData(t, initialState)
+
+			requestAndCheckResponse(t, Create(repo), tc.method, tc.url, tc.reqBody, tc.reqContentType, tc.expResponseCode, tc.expResponseBody, tc.expContentType)
 		})
 	}
 }
 
 func Test_CRURDRH(t *testing.T) {
-	initialiseData(t, "{}")
-	mux := Mux()
+	repo := initialiseData(t, "{}")
+	mux := Create(repo)
+
 	// Set key1:value1
 	requestAndCheckResponse(t, mux, http.MethodPost, "/api/", `{"key1":"value1"}`, contentTypeJson, http.StatusCreated, "", contentTypeText)
 	// Verify key1:value1
@@ -314,8 +319,9 @@ func Test_CRURDRH(t *testing.T) {
 }
 
 func Test_CDCUH(t *testing.T) {
-	initialiseData(t, "{}")
-	mux := Mux()
+	repo := initialiseData(t, "{}")
+	mux := Create(repo)
+
 	// Set key1:value1
 	requestAndCheckResponse(t, mux, http.MethodPost, "/api/", `{"key1":"value1"}`, contentTypeJson, http.StatusCreated, "", contentTypeText)
 	// Delete key1
@@ -329,8 +335,9 @@ func Test_CDCUH(t *testing.T) {
 }
 
 func Test_CRCRURDRHH(t *testing.T) {
-	initialiseData(t, "{}")
-	mux := Mux()
+	repo := initialiseData(t, "{}")
+	mux := Create(repo)
+
 	// Set key1:value1
 	requestAndCheckResponse(t, mux, http.MethodPost, "/api/", `{"key1":"value1"}`, contentTypeJson, http.StatusCreated, "", contentTypeText)
 	// Verify key1:value1
@@ -353,11 +360,15 @@ func Test_CRCRURDRHH(t *testing.T) {
 	requestAndCheckResponse(t, mux, http.MethodGet, "/api/key2/history", "", "", http.StatusOK, `[{"event":"create","value":"value3"},{"event":"delete","value":""}]`, contentTypeJson)
 }
 
-// initialiseData sets the data file to the specified data to ensure a known testing state
-func initialiseData(t *testing.T, data string) {
-	if err := os.WriteFile(dataFilePath, []byte(data), 0666); err != nil {
+// initialiseData sets the data file to the specified data to ensure a known testing state, then returns a new Repo pointing to that file
+func initialiseData(t *testing.T, data string) repository.Repo {
+	if err := os.WriteFile(testDataFilePath, []byte(data), 0666); err != nil {
 		assert.Fail(t, err.Error())
 	}
+
+	repo := repository.Repo{}
+	repo.SetDataFilePath(testDataFilePath)
+	return repo
 }
 
 // requestAndCheckResponse makes the specified request to the specified mux and asserts the specified response code, body, and content type
